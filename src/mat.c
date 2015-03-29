@@ -9,51 +9,92 @@ void mat4_identity(mat4_t *mat) {
 }
 
 void mat4_frustum(mat4_t *mat, float left, float right, float bottom, float top, float znear, float zfar) {
-	mat->m[0] = (2.0f*znear)/(right-left);
-	mat->m[5] = (2.0f*znear)/(top-bottom);
-	mat->m[8] = (right+left)/(right-left);
-	mat->m[9] = (top+bottom)/(top-bottom);
-	mat->m[10] = -((zfar+znear)/(zfar-znear));
-	mat->m[11] = -1.0f;
-	mat->m[14] = -((2.0f*zfar*znear)/(zfar-znear));
-	mat->m[15] = 0.0f;
+  mat4_t A = MAT4_IDENTITY;
+	A.m[0] = (2.0f*znear)/(right-left);
+	A.m[5] = (2.0f*znear)/(top-bottom);
+	A.m[8] = (right+left)/(right-left);
+	A.m[9] = (top+bottom)/(top-bottom);
+	A.m[10] = -((zfar+znear)/(zfar-znear));
+	A.m[11] = -1.0f;
+	A.m[14] = -((2.0f*zfar*znear)/(zfar-znear));
+	A.m[15] = 0.0f;
+  mat4_mult(mat, &A);
 }
 
 void mat4_perspective(mat4_t *mat, float fovy, float faspect, float znear, float zfar) {
+  mat4_t A = MAT4_IDENTITY;
 	float f = 1.0f/((float)tan((fovy*(M_PI/180.0f))/2.0f));
-	mat->m[0]=f/faspect;
-	mat->m[5]=f;
-	mat->m[10]=(zfar+znear)/(znear-zfar);
-	mat->m[11]=-1.0f;
-	mat->m[14]=(2.0f*zfar*znear)/(znear-zfar);
-	mat->m[15]=0.0f;
+	A.m[0]=f/faspect;
+	A.m[5]=f;
+	A.m[10]=(zfar+znear)/(znear-zfar);
+	A.m[11]=-1.0f;
+	A.m[14]=(2.0f*zfar*znear)/(znear-zfar);
+	A.m[15]=0.0f;
+  mat4_mult(mat, &A);
 }
 
 void mat4_orthographic(mat4_t *mat, float left, float right, float bottom, float top, float znear, float zfar) {
-	mat->m[0] = 2.0f/(right-left);
-	mat->m[5] = 2.0f/(top-bottom);
-	mat->m[10] = -2.0f/(zfar-znear);
-	mat->m[12] = -((right+left)/(right-left));
-	mat->m[13] = -((top+bottom)/(top-bottom));
-	mat->m[14] = -((zfar+znear)/(zfar-znear));
+  mat4_t A = MAT4_IDENTITY;
+	A.m[0] = 2.0f/(right-left);
+	A.m[5] = 2.0f/(top-bottom);
+	A.m[10] = -2.0f/(zfar-znear);
+	A.m[12] = -((right+left)/(right-left));
+	A.m[13] = -((top+bottom)/(top-bottom));
+	A.m[14] = -((zfar+znear)/(zfar-znear));
+  mat4_mult(mat, &A);
 }
 
-void mat4_translate(mat4_t *mat, float x, float y, float z) {
-	mat->m[12] = x;
-  mat->m[13] = y;
-  mat->m[14] = z;
+void mat4_translatef(mat4_t *mat, float x, float y, float z) {
+  mat4_t A = MAT4_IDENTITY;
+	A.m[12] = x;
+  A.m[13] = y;
+  A.m[14] = z;
+  mat4_mult(mat, &A);
 }
 
-void mat4_translatev(mat4_t *mat, const vec4_t *v) {
-	mat->m[12] = v->x;
-  mat->m[13] = v->y;
-  mat->m[14] = v->z;
+void mat4_translate(mat4_t *mat, const vec3_t *v) {
+  mat4_t A = MAT4_IDENTITY;
+	A.m[12] = v->x;
+  A.m[13] = v->y;
+  A.m[14] = v->z;
+  mat4_mult(mat, &A);
 }
 
 void mat4_untranslate(mat4_t *mat) {
 	mat->m[12] = 0.0f;
   mat->m[13] = 0.0f;
   mat->m[14] = 0.0f;
+}
+
+void mat4_rotatef(mat4_t *mat, float angle, float x, float y, float z) {
+  mat4_t A = MAT4_IDENTITY;
+  vec3_t v = {x, y, z};
+  v = vec3_normalize(&v);
+  A.m[0] = (v.x*v.x)*(1-(float)cos(angle))+(float)cos(angle);
+  A.m[1] = v.y*v.x*(1-(float)cos(angle))+v.z*(float)sin(angle);
+  A.m[2] = v.x*v.z*(1-(float)cos(angle))-v.y*v.z;
+  A.m[4] = v.x*v.y*(1-(float)cos(angle))-v.z*(float)sin(angle);
+  A.m[5] = (v.y*v.y)*(1-(float)cos(angle))+(float)cos(angle);
+  A.m[6] = v.y*v.z*(1-(float)cos(angle))+v.x*v.z;
+  A.m[8] = v.x*v.z*(1-(float)cos(angle))+v.y*(float)sin(angle);
+  A.m[9] = v.y*v.z*(1-(float)cos(angle))+v.y*(float)sin(angle);
+  A.m[10] = (v.z*v.z)*(1-(float)cos(angle))+(float)cos(angle);
+  mat4_mult(mat, &A);
+}
+
+void mat4_rotate(mat4_t *mat, float angle, const vec3_t *u) {
+  mat4_t A = MAT4_IDENTITY;
+  vec3_t v = vec3_normalize(u);
+  A.m[0] = (v.x*v.x)*(1-(float)cos(angle))+(float)cos(angle);
+  A.m[1] = v.y*v.x*(1-(float)cos(angle))+v.z*(float)sin(angle);
+  A.m[2] = v.x*v.z*(1-(float)cos(angle))-v.y*v.z;
+  A.m[4] = v.x*v.y*(1-(float)cos(angle))-v.z*(float)sin(angle);
+  A.m[5] = (v.y*v.y)*(1-(float)cos(angle))+(float)cos(angle);
+  A.m[6] = v.y*v.z*(1-(float)cos(angle))+v.x*v.z;
+  A.m[8] = v.x*v.z*(1-(float)cos(angle))+v.y*(float)sin(angle);
+  A.m[9] = v.y*v.z*(1-(float)cos(angle))+v.y*(float)sin(angle);
+  A.m[10] = (v.z*v.z)*(1-(float)cos(angle))+(float)cos(angle);
+  mat4_mult(mat, &A);
 }
 
 void mat4_transpose(mat4_t *mat) {

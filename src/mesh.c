@@ -39,40 +39,114 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
     return false;
   }
 
-  // Append the vertices and indices as they are read in
-  mesh->vertices = array_create(256, sizeof(vec3_t));
-  mesh->indices = array_create(256, sizeof(GLuint));
+  // Grab the vertex attribute data and place them in separate arrays
+  array_t *positions = array_create(256, sizeof(vec3_t));
+  array_t *uv = array_create(256, sizeof(vec3_t));
+  array_t *normals = array_create(256, sizeof(vec3_t));
   char line[256];
   while(fgets(line, 256, f) != NULL) {
-    switch(line[0]) {
-      case 'v':
-      {
-        vec3_t v;
-        char *pch = strtok(&line[1], " ");
-        for(uint32_t i = 0; pch != NULL; ++i) {
-          *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
-          pch = strtok(NULL, " ");
+    if(line[0] == 'v') {
+      switch(line[1]) {
+      case 'n':
+        {
+          // Parse the vertex normals and normalize them
+          vec3_t v = {0.0f, 0.0f, 0.0f};
+          char *pch = strtok(&line[2], " ");
+          for(uint32_t i = 0; pch != NULL; ++i) {
+            *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
+            pch = strtok(NULL, " ");
+          }
+          v = vec3_normalize(&v);
+          array_append(normals, &v);
+          break;
         }
-        char s[256];
-        vec3_str(&v, s);
-        array_append(mesh->vertices, &v);
-        break;
-      }
-      case 'f':
-      {
-        char *pch = strtok(&line[1], " ");
-        while(pch != NULL) {
-          // Indices start from 1 in the Wavefront OBJ format
-          uint32_t index = (uint32_t)strtoul(pch, NULL, 10)-1;
-          array_append(mesh->indices, &index);
-          pch = strtok(NULL, " ");
+      case 't':
+        {
+          // Parse the texture coordinates
+          vec3_t v = {0.0f, 0.0f, 0.0f};
+          char *pch = strtok(&line[2], " ");
+          for(uint32_t i = 0; pch != NULL; ++i) {
+            *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
+            pch = strtok(NULL, " ");
+          }
+          array_append(uv, &v);
+          break;
         }
-        break;
-      }
       default:
-        break;
+        {
+          // Parse the vertex position coordinates
+          vec3_t v = {0.0f, 0.0f, 0.0f};
+          char *pch = strtok(&line[1], " ");
+          for(uint32_t i = 0; pch != NULL; ++i) {
+            *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
+            pch = strtok(NULL, " ");
+          }
+          array_append(positions, &v);
+          break;
+        }
+      }
     }
   }
+
+  // Seek to the beginning of the file
+  fseek(f, 0, SEEK_SET);
+
+  // Fill the vertex attribute array with 0 vectors
+  size_t num_attribs = 3*array_size(positions);
+  mesh->vertices = array_create(num_attribs, sizeof(vec3_t));
+  vec3_t z = {0.0f, 0.0f, 0.0f};
+  for(uint32_t i = 0; i < num_attribs; ++i) {
+    array_append(mesh->vertices, &z);
+  }
+
+  // Parse the indices as they are read in and place the vertex attributes in the correct index
+  // in the vertex attribute array
+  mesh->indices = array_create(256, sizeof(GLuint));
+  while(fgets(line, 256, f) != NULL) {
+    if(line[0] == 'f') {
+      char *pch = strtok(&line[1], " ");
+      while(pch != NULL) {
+        char *next;
+        // Indices start from 1 in the Wavefront OBJ format
+        // First parse the vertex position index
+        uint32_t index = (uint32_t)strtoul(pch, &next, 10)-1;
+        array_append(mesh->indices, &index);
+        
+        // Now append the vertex position at that index into the interleaved vertex attribute array
+        vec3_t *v = array_at(positions, index);
+        array_set(mesh->vertices, index*3, v);
+
+        if(next[0] == '/') {
+          // Attempt to parse the texture index, check to make sure a texture index exists
+          uint32_t t_index = (uint32_t)strtoul(next+1, &next, 10);
+          if(t_index != 0) {
+            // Now append the vertex texture coordinate into the interleaved vertex attribute array
+            t_index--;
+            v = array_at(uv, t_index);
+            array_set(mesh->vertices, index*3+1, v);
+          } else {
+            next++;
+          }
+
+          // Attempt to parse the normal index, check to make sure a normal index exists
+          uint32_t n_index = (uint32_t)strtoul(next, NULL, 10);
+          if(n_index != 0) {
+            // Now append the vertex normal attribute into the interleaved vertex attribute array
+            n_index--;
+            v = array_at(normals, n_index);
+            array_set(mesh->vertices, index*3+2, v);
+          }
+        }
+
+        pch = strtok(NULL, " ");
+      }
+    }
+  }
+
+  // Cleanup temp arrays
+  array_delete(positions);
+  array_delete(uv);
+  array_delete(normals);
 
   // Check for any errors
   if(ferror(f) != 0) {
@@ -83,20 +157,6 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
 
   // Generate and fill the OpenGL buffers
   _mesh_gen_buffers(mesh);
-
-  /*char s[256];
-  size_t size = array_size(mesh->vertices);
-  vec3_t *data = (vec3_t*)array_data(mesh->vertices);
-  for(uint32_t i = 0; i < size; i++) {
-    vec3_str(&data[i], s);
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "%s\n", s);
-  }
-  
-  size = array_size(mesh->indices);
-  uint32_t *dataf = (uint32_t*)array_data(mesh->indices);
-  for(uint32_t i = 0; i < size; i += 3) {
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "f %u %u %u\n", dataf[i], dataf[i+1], dataf[i+2]);
-  }*/
 
   return true;
 }

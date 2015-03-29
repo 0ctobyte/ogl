@@ -56,7 +56,7 @@ bool vec3_compare(const vec3_t *v1, const vec3_t *v2) {
 }
 
 void vec3_str(const vec3_t *v, char *str) {
-  sprintf(str, "[%10.2f, %10.2f, %10.2f]", v->x, v->y, v->z);
+  sprintf(str, "[%10.6f, %10.6f, %10.6f]", v->x, v->y, v->z);
 }
 
 // VEC4
@@ -108,6 +108,6 @@ bool vec4_compare(const vec4_t *v1, const vec4_t *v2) {
 }
 
 void vec4_str(const vec4_t *v, char *str) {
-  sprintf(str, "[%10.2f, %10.2f, %10.2f, %10.2f]", v->x, v->y, v->z, v->w);
+  sprintf(str, "[%10.6f, %10.6f, %10.6f, %10.6f]", v->x, v->y, v->z, v->w);
 }
 

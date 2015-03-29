@@ -11,6 +11,7 @@
 
 void check_gl_errors();
 void init();
+void update();
 void draw();
 void key_down(SDL_Event *event);
 uint32_t timer(uint32_t interval, void *param);
@@ -76,20 +77,21 @@ int main(int argc, char **argv) {
 
   // Main loop
   while(running) {
+    update();
     SDL_Event event;
     SDL_PollEvent(&event);
     switch(event.type) {
-      case SDL_QUIT:
-        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Program quit after %i ticks\n", event.quit.timestamp);
-        running = false;
-        break;
-      case SDL_USEREVENT:
-        draw();
-        SDL_GL_SwapWindow(window);
-        break;
-      case SDL_KEYDOWN:
-        key_down(&event);
-        break;
+    case SDL_QUIT:
+      SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Program quit after %i ticks\n", event.quit.timestamp);
+      running = false;
+      break;
+    case SDL_USEREVENT:
+      draw();
+      SDL_GL_SwapWindow(window);
+      break;
+    case SDL_KEYDOWN:
+      key_down(&event);
+      break;
     }
     check_gl_errors();
   }
@@ -98,18 +100,59 @@ int main(int argc, char **argv) {
 }
 
 static uint32_t s_id;
-static float z;
+static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static mesh_t mesh;
-static mat4_t projection = MAT4_INIT; 
-static mat4_t view = MAT4_INIT;
-static mat4_t model = MAT4_INIT;
+static mat4_t projection = MAT4_IDENTITY; 
+static mat4_t view = MAT4_IDENTITY;
+static mat4_t model = MAT4_IDENTITY;
 
 void key_down(SDL_Event *event) {
-  if(event->key.keysym.sym == SDLK_UP) z -= 0.005f;
-  if(event->key.keysym.sym == SDLK_DOWN) z+= 0.005f;
+  switch(event->key.keysym.sym) {
+  case SDLK_UP:
+    if(event->key.keysym.mod == KMOD_LSHIFT) {
+      camera.z -= 0.02f;
+    } else {
+      camera.y += 0.02f;
+    }
+    break;
+  case SDLK_DOWN:
+    if(event->key.keysym.mod == KMOD_LSHIFT) {
+      camera.z += 0.02f;
+    } else {
+      camera.y -= 0.02f;
+    }
+    break;
+  case SDLK_RIGHT:
+    camera.x += 0.02f;
+    break;
+  case SDLK_LEFT:
+    camera.x -= 0.02f;
+    break;
+  case SDLK_w:
+    model_rot.x += 0.2f;
+    break;
+  case SDLK_s:
+    model_rot.x -= 0.2f;
+    break;
+  case SDLK_d:
+    model_rot.y += 0.2f;
+    break;
+  case SDLK_a:
+    model_rot.y -= 0.2f;
+    break;
+  case SDLK_e:
+    model_rot.z += 0.2f;
+    break;
+  case SDLK_q:
+    model_rot.z -= 0.2f;
+    break;
+  }
 }
 
 void init() {
+  mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
+
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   s_id = shader_load("shaders/simple.vert.glsl", "shaders/simple.frag.glsl");  
@@ -119,32 +162,36 @@ void init() {
     exit(EXIT_FAILURE);
   }
 
-  if(mesh_load(&mesh, "resources/elephant.obj") == false) {
+  if(mesh_load(&mesh, "resources/monkey.obj") == false) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load mesh\n");
     exit(EXIT_FAILURE);
   }
+}
 
-  glUseProgram(0);
+void update() {
+  mat4_identity(&view);
+  mat4_translate(&view, &camera);
+
+  mat4_identity(&model);
+  mat4_translate(&model, &model_pos);
+  mat4_rotatef(&model, model_rot.x, 1.0f, 0.0f, 0.0f);
+  mat4_rotatef(&model, model_rot.y, 0.0f, 1.0f, 0.0f);
+  mat4_rotatef(&model, model_rot.z, 0.0f, 0.0f, 1.0f);
 }
 
 void draw() {
-  mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
-  mat4_identity(&view);
-  mat4_identity(&model);
-  mat4_translate(&model, 0.0f, 0.0f, -10.0f);
-
-  mat4_translate(&view, 0.0f, 0.0f, z);
-
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
   mesh_bind(&mesh);
-  shader_bind(s_id, &projection, &view, &model, 0);  
+  shader_bind(s_id);
+
+  shader_set_attribs(s_id, 3*sizeof(vec3_t), 0, sizeof(vec3_t), 2*sizeof(vec3_t));
+  shader_set_uniforms(s_id, projection.m, view.m, model.m);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.buf_ids[MESH_IBO]);
   glDrawElements(GL_TRIANGLES, (GLsizei)array_size(mesh.indices), GL_UNSIGNED_INT, 0);
 
-  shader_unbind(s_id);
+  shader_unbind();
   mesh_unbind();
 }
 

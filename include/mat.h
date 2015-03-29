@@ -6,7 +6,9 @@
 
 #include "vec.h"
 
-#define MAT4_INIT {{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}}
+#define MAT4_INIT {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}}
+
+#define MAT4_IDENTITY {{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}}
 
 typedef struct {
   GLfloat m[16];
@@ -16,9 +18,11 @@ void mat4_identity(mat4_t *mat);
 void mat4_frustum(mat4_t *mat, float left, float right, float bottom, float top, float znear, float zfar);
 void mat4_perspective(mat4_t *mat, float fovy, float faspect, float znear, float zfar);
 void mat4_orthographic(mat4_t *mat, float left, float right, float bottom, float top, float znear, float zfar);
-void mat4_translate(mat4_t *mat, float x, float y, float z);
-void mat4_translatev(mat4_t *mat, const vec4_t *v);
+void mat4_translatef(mat4_t *mat, float x, float y, float z);
+void mat4_translate(mat4_t *mat, const vec3_t *v);
 void mat4_untranslate(mat4_t *mat);
+void mat4_rotatef(mat4_t *mat, float angle, float x, float y, float z);
+void mat4_rotate(mat4_t *mat, float angle, const vec3_t *u);
 void mat4_transpose(mat4_t *mat);
 void mat4_inverse(mat4_t *mat);
 float mat4_cofactor(const mat4_t *mat, uint32_t column, uint32_t row);

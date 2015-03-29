@@ -67,6 +67,12 @@ void* array_at(array_t *a, uint32_t index) {
   return (void*)((char*)a->data+(a->elem_size*index));
 }
 
+void array_set(array_t *a, uint32_t index, void *datum) {
+  assert(a != NULL && index < a->size);
+
+  memcpy((char*)a->data+(a->elem_size*index), datum, a->elem_size);
+}
+
 void* array_data(array_t *a) {
   assert(a != NULL);
   return a->data;
