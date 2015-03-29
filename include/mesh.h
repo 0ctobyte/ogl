@@ -2,6 +2,7 @@
 #define __MESH_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "array.h"
 
@@ -16,7 +17,7 @@ typedef struct {
   uint32_t buf_ids[MESH_NUM_BUFFERS];
 } mesh_t;
 
-void mesh_load(mesh_t *mesh, const char *objfile);
+bool mesh_load(mesh_t *mesh, const char *objfile);
 void mesh_bind(mesh_t *mesh);
 void mesh_unbind();
 void mesh_delete(mesh_t *mesh);

@@ -119,7 +119,10 @@ void init() {
     exit(EXIT_FAILURE);
   }
 
-  mesh_load(&mesh, "resources/teapot.obj");
+  if(mesh_load(&mesh, "resources/elephant.obj") == false) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load mesh\n");
+    exit(EXIT_FAILURE);
+  }
 
   glUseProgram(0);
 }
@@ -128,7 +131,7 @@ void draw() {
   mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
   mat4_identity(&view);
   mat4_identity(&model);
-  mat4_translate(&model, 0.0f, 0.0f, -1.0f);
+  mat4_translate(&model, 0.0f, 0.0f, -10.0f);
 
   mat4_translate(&view, 0.0f, 0.0f, z);
 

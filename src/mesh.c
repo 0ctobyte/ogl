@@ -30,13 +30,13 @@ void _mesh_gen_buffers(mesh_t *mesh) {
   glBindVertexArray(0);
 }
 
-void mesh_load(mesh_t *mesh, const char *objfile) {
+bool mesh_load(mesh_t *mesh, const char *objfile) {
   FILE *f = fopen(objfile, "r");
 
   // Make sure the file was opened
   if(f == NULL) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not open Wavefront OBJ file: %s\n", objfile);
-    return;
+    return false;
   }
 
   // Append the vertices and indices as they are read in
@@ -78,7 +78,7 @@ void mesh_load(mesh_t *mesh, const char *objfile) {
   if(ferror(f) != 0) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading file: %s\n", objfile);
     mesh_delete(mesh);
-    return;
+    return false;
   }
 
   // Generate and fill the OpenGL buffers
@@ -97,6 +97,8 @@ void mesh_load(mesh_t *mesh, const char *objfile) {
   for(uint32_t i = 0; i < size; i += 3) {
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "f %u %u %u\n", dataf[i], dataf[i+1], dataf[i+2]);
   }*/
+
+  return true;
 }
 
 void mesh_bind(mesh_t *mesh) {
