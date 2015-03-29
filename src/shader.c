@@ -40,6 +40,7 @@ uint32_t _shader_link(uint32_t vshader, uint32_t fshader) {
   glAttachShader(program, fshader);
   glLinkProgram(program);
 
+  // Check if linking went okay
   int32_t status;
   glGetProgramiv(program, GL_LINK_STATUS, &status);
   if(status == GL_FALSE) {
@@ -51,6 +52,7 @@ uint32_t _shader_link(uint32_t vshader, uint32_t fshader) {
 
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Linker failure: %s\n", info_log);
 
+    // Cleanup
     free(info_log);
     glDetachShader(program, vshader);
     glDeleteShader(vshader);
@@ -70,14 +72,15 @@ uint32_t _shader_link(uint32_t vshader, uint32_t fshader) {
 }
  
 uint32_t shader_load(const char *vertfile, const char *fragfile) {
-  // Get the number of bytes in the file
   FILE *f = fopen(vertfile, "rb");
-  
+ 
+  // Make sure the file was opened
   if(f == NULL) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not open file: %s\n", vertfile);
     return 0;
   }
 
+  // Get the number of bytes in the file
   fseek(f, 0, SEEK_END);
   size_t fsize = (size_t)ftell(f);
   fseek(f, 0, SEEK_SET);
@@ -96,7 +99,6 @@ uint32_t shader_load(const char *vertfile, const char *fragfile) {
   
   free(vertcode);
 
-  // Get the number of bytes in the file
   f = fopen(fragfile, "rb");
   
   if(f == NULL) {
@@ -104,6 +106,7 @@ uint32_t shader_load(const char *vertfile, const char *fragfile) {
     return 0;
   }
 
+  // Get the number of bytes in the file
   fseek(f, 0, SEEK_END);
   fsize = (size_t)ftell(f);
   fseek(f, 0, SEEK_SET);
@@ -130,5 +133,32 @@ uint32_t shader_load(const char *vertfile, const char *fragfile) {
   glUseProgram(0);
 
   return program;
+}
+
+void shader_bind(uint32_t s_id, mat4_t *projection, mat4_t *view, mat4_t *model, uintptr_t vert_offset) {
+  glUseProgram(s_id);
+  int32_t attrib_loc = glGetAttribLocation(s_id, "in_Position");
+  glVertexAttribPointer((uint32_t)attrib_loc, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)vert_offset);
+  glEnableVertexAttribArray((uint32_t)attrib_loc);
+
+  int32_t uniform_loc = glGetUniformLocation(s_id, "projection");
+  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, projection->m);
+
+  uniform_loc = glGetUniformLocation(s_id, "view");
+  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, view->m);
+
+  uniform_loc = glGetUniformLocation(s_id, "model");
+  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, model->m);
+}
+
+void shader_unbind(uint32_t s_id) {
+  int32_t attrib_loc = glGetAttribLocation(s_id, "in_Position");
+  glDisableVertexAttribArray((uint32_t)attrib_loc);
+  glUseProgram(0);
+}
+
+void shader_delete(uint32_t s_id) {
+  glUseProgram(0);
+  glDeleteProgram(s_id);
 }
 

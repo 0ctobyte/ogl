@@ -78,8 +78,7 @@ size_t array_size(array_t *a) {
 }
 
 void array_delete(array_t *a) {
-  assert(a != NULL);
-  if(a->data != NULL) free(a->data);
-  free(a);
+  if(a != NULL && a->data != NULL) free(a->data);
+  if(a != NULL) free(a);
 }
 

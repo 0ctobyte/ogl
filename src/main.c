@@ -12,22 +12,8 @@
 void check_gl_errors();
 void init();
 void draw();
-
-uint32_t timer(uint32_t interval, void *param) {
-  SDL_Event event;
-  SDL_UserEvent userevent;
-
-  userevent.type = SDL_USEREVENT;
-  userevent.code = 0;
-  userevent.data1 = NULL;
-  userevent.data2 = NULL;
-
-  event.type= SDL_USEREVENT;
-  event.user = userevent;
-
-  SDL_PushEvent(&event);
-  return interval;
-}
+void key_down(SDL_Event *event);
+uint32_t timer(uint32_t interval, void *param);
 
 int main(int argc, char **argv) { 
   bool running = true;
@@ -101,6 +87,9 @@ int main(int argc, char **argv) {
         draw();
         SDL_GL_SwapWindow(window);
         break;
+      case SDL_KEYDOWN:
+        key_down(&event);
+        break;
     }
     check_gl_errors();
   }
@@ -108,90 +97,70 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-static uint32_t vao, vbo, shader_program;
-
-static vec4_t vertices[3] = {
-  {0.0f, 10.0f, 0.0f, 1.0f},
-  {-10.0f, 0.0f, 0.0f, 1.0f},
-  {10.0f, 0.0f, 0.0f, 1.0f}
-};
-
+static uint32_t s_id;
+static float z;
+static mesh_t mesh;
 static mat4_t projection = MAT4_INIT; 
 static mat4_t view = MAT4_INIT;
 static mat4_t model = MAT4_INIT;
 
+void key_down(SDL_Event *event) {
+  if(event->key.keysym.sym == SDLK_UP) z -= 0.005f;
+  if(event->key.keysym.sym == SDLK_DOWN) z+= 0.005f;
+}
+
 void init() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-  // Generate and bind a VAO
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  s_id = shader_load("shaders/simple.vert.glsl", "shaders/simple.frag.glsl");  
 
-  // Generate and bind an Array VBO
-  glGenBuffers(1, &vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-  // Copy vertex data into the buffer
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  // Unbind the VBO and VAO
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-
-  shader_program = shader_load("shaders/simple.vert.glsl", "shaders/simple.frag.glsl");  
-
-  if(shader_program == 0) {
+  if(s_id == 0) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load shaders\n");
     exit(EXIT_FAILURE);
   }
 
-  mesh_t mesh;
   mesh_load(&mesh, "resources/teapot.obj");
 
   glUseProgram(0);
 }
 
 void draw() {
-  static float x = 0.0f, hstep = 0.5f;
-  mat4_frustum(&projection, -10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 100.0f);
+  mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
   mat4_identity(&view);
   mat4_identity(&model);
-  mat4_translate(&model, 0.0f, 0.0f, -2.0f);
+  mat4_translate(&model, 0.0f, 0.0f, -1.0f);
 
-  x += hstep;
-  if(x >= 10.0f) hstep = -0.5f;
-  if(x <= -10.0f) hstep = 0.5f;
-
-  mat4_translate(&view, x, 0.0f, 0.0f);
+  mat4_translate(&view, 0.0f, 0.0f, z);
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT);
 
-  glUseProgram(shader_program);
-  glBindVertexArray(vao);
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  
-  int32_t attrib_loc = glGetAttribLocation(shader_program, "in_Position");
-  glVertexAttribPointer((uint32_t)attrib_loc, 4, GL_FLOAT, GL_FALSE, 0, 0);
-  glEnableVertexAttribArray((uint32_t)attrib_loc);
+  mesh_bind(&mesh);
+  shader_bind(s_id, &projection, &view, &model, 0);  
 
-  int32_t uniform_loc = glGetUniformLocation(shader_program, "projection");
-  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, projection.m);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.buf_ids[MESH_IBO]);
+  glDrawElements(GL_TRIANGLES, (GLsizei)array_size(mesh.indices), GL_UNSIGNED_INT, 0);
 
-  uniform_loc = glGetUniformLocation(shader_program, "view");
-  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, view.m);
-
-  uniform_loc = glGetUniformLocation(shader_program, "model");
-  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, model.m);
-
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-
-  glDisableVertexAttribArray((uint32_t)attrib_loc);
-  
-  glBindVertexArray(0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glUseProgram(0);
+  shader_unbind(s_id);
+  mesh_unbind();
 }
+
+uint32_t timer(uint32_t interval, void *param) {
+  SDL_Event event;
+  SDL_UserEvent userevent;
+
+  userevent.type = SDL_USEREVENT;
+  userevent.code = 0;
+  userevent.data1 = NULL;
+  userevent.data2 = NULL;
+
+  event.type= SDL_USEREVENT;
+  event.user = userevent;
+
+  SDL_PushEvent(&event);
+  return interval;
+}
+
 
 void check_gl_errors() {
   GLenum err;
