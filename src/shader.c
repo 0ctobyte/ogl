@@ -149,11 +149,23 @@ void shader_set_attrib(uint32_t s_id, const char *attrib_name, size_t stride, ui
   }
 }
 
-void shader_set_uniform(uint32_t s_id, const char *uniform_name, void *data) {
+void shader_set_uniform(uint32_t s_id, const char *uniform_name, shader_uniform_type_t uniform_type, void *data) {
   glUseProgram(s_id);
 
-  int32_t uniform_loc = glGetUniformLocation(s_id, uniform_name);
-  if(uniform_loc >= 0) glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, data);
+  switch(uniform_type) {
+  case SHADER_UNIFORM_MAT4:
+    {
+      int32_t uniform_loc = glGetUniformLocation(s_id, uniform_name);
+      if(uniform_loc >= 0) glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, data);
+      break;
+    }
+  case SHADER_UNIFORM_VEC3:
+    {
+      int32_t uniform_loc = glGetUniformLocation(s_id, uniform_name);
+      if(uniform_loc >= 0) glUniform3fv(uniform_loc, 1, data);
+      break;
+    }
+  }
 }
 
 void shader_unbind() {

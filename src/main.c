@@ -11,9 +11,9 @@
 
 void check_gl_errors();
 void init();
+void key_down(SDL_Event *event);
 void update();
 void draw();
-void key_down(SDL_Event *event);
 uint32_t timer(uint32_t interval, void *param);
 
 static char obj_model[256], vertex_shader[256], fragment_shader[256];
@@ -93,7 +93,6 @@ int main(int argc, char **argv) {
 
   // Main loop
   while(running) {
-    update();
     SDL_Event event;
     SDL_WaitEvent(&event);
     switch(event.type) {
@@ -107,6 +106,7 @@ int main(int argc, char **argv) {
       break;
     case SDL_KEYDOWN:
       key_down(&event);
+      update();
       break;
     }
     check_gl_errors();
@@ -117,11 +117,46 @@ int main(int argc, char **argv) {
 
 static uint32_t s_id;
 static float step_size = 0.2f;
-static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
+static vec3_t camera, light_position, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
+static vec3_t surface_color, light_color;
 static mesh_t mesh;
 static mat4_t projection = MAT4_IDENTITY; 
 static mat4_t view = MAT4_IDENTITY;
 static mat4_t model = MAT4_IDENTITY;
+
+void init() {
+  mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
+  mat4_translate(&model, &model_pos);
+
+  // The surface light is a soft grey whereas the point light is pure white light
+  surface_color.x = 0.75f; surface_color.y = 0.75f; surface_color.z = 0.75f;
+  light_color.x = 1.0f; light_color.y = 1.0f; light_color.z = 1.0f;
+  //light_position.x = -100.0f; light_position.y = 100.0f; light_position.z = 100.0f;
+
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClearDepth(1.0f);
+
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_DEPTH_CLAMP);
+  glDepthMask(GL_TRUE);
+  glDepthRange(0.0f, 1.0f);
+
+  s_id = shader_load(vertex_shader, fragment_shader);  
+
+  if(s_id == 0) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load shaders\n");
+    exit(EXIT_FAILURE);
+  }
+
+  if(mesh_load(&mesh, obj_model) == false) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load mesh\n");
+    exit(EXIT_FAILURE);
+  }
+}
 
 void key_down(SDL_Event *event) {
   switch(event->key.keysym.sym) {
@@ -172,26 +207,6 @@ void key_down(SDL_Event *event) {
   }
 }
 
-void init() {
-  mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
-
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-
-  s_id = shader_load(vertex_shader, fragment_shader);  
-
-  if(s_id == 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load shaders\n");
-    exit(EXIT_FAILURE);
-  }
-
-  if(mesh_load(&mesh, obj_model) == false) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load mesh\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
 void update() {
   mat4_identity(&view);
   mat4_translate(&view, &camera);
@@ -201,20 +216,28 @@ void update() {
   mat4_rotatef(&model, model_rot.x, 1.0f, 0.0f, 0.0f);
   mat4_rotatef(&model, model_rot.y, 0.0f, 1.0f, 0.0f);
   mat4_rotatef(&model, model_rot.z, 0.0f, 0.0f, 1.0f);
+
+  // The point light will track the camera
+  light_position = camera;
 }
 
 void draw() {
-  glClear(GL_COLOR_BUFFER_BIT);
-  
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   mesh_bind(&mesh);
   shader_bind(s_id);
 
+  // Set the per vertex attributes for the shader
   shader_set_attrib(s_id, "in_Position", 3*sizeof(vec3_t), 0);
   shader_set_attrib(s_id, "in_Normal", 3*sizeof(vec3_t), 2*sizeof(vec3_t));
 
-  shader_set_uniform(s_id, "projection", projection.m);
-  shader_set_uniform(s_id, "view", view.m);
-  shader_set_uniform(s_id, "model", model.m);
+  // Set the uniform variables
+  shader_set_uniform(s_id, "projection", SHADER_UNIFORM_MAT4, projection.m);
+  shader_set_uniform(s_id, "view", SHADER_UNIFORM_MAT4, view.m);
+  shader_set_uniform(s_id, "model", SHADER_UNIFORM_MAT4, model.m);
+  shader_set_uniform(s_id, "surface_col", SHADER_UNIFORM_VEC3, &surface_color);
+  shader_set_uniform(s_id, "light.position", SHADER_UNIFORM_VEC3, &light_position); 
+  shader_set_uniform(s_id, "light.color", SHADER_UNIFORM_VEC3, &light_color); 
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.buf_ids[MESH_IBO]);
   glDrawElements(GL_TRIANGLES, (GLsizei)array_size(mesh.indices), GL_UNSIGNED_INT, 0);
