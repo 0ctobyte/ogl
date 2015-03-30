@@ -131,16 +131,15 @@ static float step_size = 0.2f, rot_mult = 10.0f;
 static vec3_t camera, light_position, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static vec3_t surface_color, light_color;
 static mesh_t mesh;
-static mat4_t projection = MAT4_IDENTITY, view = MAT4_IDENTITY, model = MAT4_IDENTITY, modelview = MAT4_IDENTITY; 
+static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
 
 void init() {
+  // Set up a perspective projection matrix
   mat4_perspective(&projection, 60.0f, (float)w/(float)h, 1.0f, 10000.0f);
-  mat4_translate(&model, &model_pos);
   
-  modelview = view;
-  mat4_inverse(&modelview);
-  mat4_mult(&modelview, &model);
-
+  // Initial update
+  update();
+  
   // The surface light is a soft grey whereas the point light is pure white light
   surface_color.x = 0.75f; surface_color.y = 0.75f; surface_color.z = 0.75f;
   light_color.x = 1.0f; light_color.y = 1.0f; light_color.z = 1.0f;
@@ -231,19 +230,28 @@ void key_down(SDL_Event *event) {
 }
 
 void update() {
-  mat4_identity(&view);
-  mat4_translate(&view, &camera);
-
-  mat4_identity(&model);
-  mat4_translate(&model, &model_pos);
-  mat4_rotatef(&model, model_rot.x, 1.0f, 0.0f, 0.0f);
-  mat4_rotatef(&model, model_rot.y, 0.0f, 1.0f, 0.0f);
-  mat4_rotatef(&model, model_rot.z, 0.0f, 0.0f, 1.0f);
-
   // Update the modelview matrix, improves performance since shaders don't have to compute this for every vertex
-  modelview = view;
+  // Translate the camera
+  mat4_identity(&modelview);
+  mat4_translate(&modelview, &camera);
   mat4_inverse(&modelview);
-  mat4_mult(&modelview, &model);
+
+  // Apply the rotation and translation to the model
+  mat4_translate(&modelview, &model_pos);
+  mat4_rotatef(&modelview, model_rot.x, 1.0f, 0.0f, 0.0f);
+  mat4_rotatef(&modelview, model_rot.y, 0.0f, 1.0f, 0.0f);
+  mat4_rotatef(&modelview, model_rot.z, 0.0f, 0.0f, 1.0f);
+
+  // update the modelviewprojection matrix
+  modelviewprojection = projection;
+  mat4_mult(&modelviewprojection, &modelview);
+
+  // Update the modelview matrix for the normals
+  // The normals can be rotated but translation and scaling should not be applied to the normals
+  normalmodelview = modelview;
+  mat4_untranslate(&normalmodelview);
+  mat4_inverse(&normalmodelview);
+  mat4_transpose(&normalmodelview);
 
   // The point light will track the camera
   light_position = camera;
@@ -260,8 +268,9 @@ void draw() {
   shader_set_attrib(s_id, "in_Normal", 3*sizeof(vec3_t), 2*sizeof(vec3_t));
 
   // Set the uniform variables
-  shader_set_uniform(s_id, "projection", SHADER_UNIFORM_MAT4, projection.m);
+  shader_set_uniform(s_id, "modelviewprojection", SHADER_UNIFORM_MAT4, modelviewprojection.m);
   shader_set_uniform(s_id, "modelview", SHADER_UNIFORM_MAT4, modelview.m);
+  shader_set_uniform(s_id, "normalmodelview", SHADER_UNIFORM_MAT4, normalmodelview.m);
   shader_set_uniform(s_id, "surface_col", SHADER_UNIFORM_VEC3, &surface_color);
   shader_set_uniform(s_id, "light.position", SHADER_UNIFORM_VEC3, &light_position); 
   shader_set_uniform(s_id, "light.color", SHADER_UNIFORM_VEC3, &light_color); 

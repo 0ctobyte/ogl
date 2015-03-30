@@ -1,6 +1,7 @@
 #version 410 core
 
 uniform mat4 modelview;
+uniform mat4 normalmodelview;
 uniform vec3 surface_col;
 uniform struct Light {
   vec3 position;
@@ -15,8 +16,7 @@ out vec4 f_Color;
 void main()
 {
   // transform normal in world coordinates
-  mat3 normal_matrix = transpose(inverse(mat3(modelview)));
-  vec3 normal = normalize(normal_matrix*o_Normal);
+  vec3 normal = normalize(mat3(normalmodelview)*o_Normal);
 
   // Calculate the position of this fragment in world coordinates
   vec3 frag_pos = vec3(modelview * vec4(o_Position, 1));
