@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
       update();
       break;
     }
-    check_gl_errors();
+    //check_gl_errors();
   }
 
   return 0;
