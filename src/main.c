@@ -77,8 +77,8 @@ int main(int argc, char **argv) {
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "GLSL version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   sprintf(obj_model, "resources/teapot.obj");
-  sprintf(vertex_shader, "shaders/simple.vert.glsl");
-  sprintf(fragment_shader, "shaders/simple.frag.glsl");
+  sprintf(vertex_shader, "shaders/flat.vert.glsl");
+  sprintf(fragment_shader, "shaders/flat.frag.glsl");
 
   if(argc > 1) {
     snprintf(obj_model, 256, "resources/%s.obj", argv[1]);
