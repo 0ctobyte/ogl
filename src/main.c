@@ -16,6 +16,8 @@ void draw();
 void key_down(SDL_Event *event);
 uint32_t timer(uint32_t interval, void *param);
 
+static char obj_model[256], vertex_shader[256], fragment_shader[256];
+
 int main(int argc, char **argv) { 
   bool running = true;
   SDL_Window *window;
@@ -39,6 +41,7 @@ int main(int argc, char **argv) {
   SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+  SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
   
@@ -57,9 +60,9 @@ int main(int argc, char **argv) {
   }
 
   // Enable VSYNC
-  if(SDL_GL_SetSwapInterval(1) != 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VSYNC not enabled!: %s\n", SDL_GetError());
-  }
+  //if(SDL_GL_SetSwapInterval(1) != 0) {
+  //  SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VSYNC not enabled!: %s\n", SDL_GetError());
+  //}
 
   // Enable timer
   if(SDL_AddTimer(1000/60, timer, NULL) == 0) {
@@ -73,13 +76,26 @@ int main(int argc, char **argv) {
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL version: %s\n", glGetString(GL_VERSION));
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "GLSL version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
+  sprintf(obj_model, "resources/teapot.obj");
+  sprintf(vertex_shader, "shaders/simple.vert.glsl");
+  sprintf(fragment_shader, "shaders/simple.frag.glsl");
+
+  if(argc > 1) {
+    snprintf(obj_model, 256, "resources/%s.obj", argv[1]);
+  }
+
+  if(argc > 2) {
+    snprintf(vertex_shader, 256, "shaders/%s.vert.glsl", argv[2]);
+    snprintf(fragment_shader, 256, "shaders/%s.frag.glsl", argv[2]);
+  }
+
   init();
 
   // Main loop
   while(running) {
     update();
     SDL_Event event;
-    SDL_PollEvent(&event);
+    SDL_WaitEvent(&event);
     switch(event.type) {
     case SDL_QUIT:
       SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Program quit after %i ticks\n", event.quit.timestamp);
@@ -100,6 +116,7 @@ int main(int argc, char **argv) {
 }
 
 static uint32_t s_id;
+static float step_size = 0.2f;
 static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static mesh_t mesh;
 static mat4_t projection = MAT4_IDENTITY; 
@@ -110,41 +127,47 @@ void key_down(SDL_Event *event) {
   switch(event->key.keysym.sym) {
   case SDLK_UP:
     if(event->key.keysym.mod == KMOD_LSHIFT) {
-      camera.z -= 0.02f;
+      camera.z -= step_size;
     } else {
-      camera.y += 0.02f;
+      camera.y += step_size;
     }
     break;
   case SDLK_DOWN:
     if(event->key.keysym.mod == KMOD_LSHIFT) {
-      camera.z += 0.02f;
+      camera.z += step_size;
     } else {
-      camera.y -= 0.02f;
+      camera.y -= step_size;
     }
     break;
   case SDLK_RIGHT:
-    camera.x += 0.02f;
+    camera.x += step_size;
     break;
   case SDLK_LEFT:
-    camera.x -= 0.02f;
+    camera.x -= step_size;
     break;
   case SDLK_w:
-    model_rot.x += 0.2f;
+    model_rot.x += step_size;
     break;
   case SDLK_s:
-    model_rot.x -= 0.2f;
+    model_rot.x -= step_size;
     break;
   case SDLK_d:
-    model_rot.y += 0.2f;
+    model_rot.y += step_size;
     break;
   case SDLK_a:
-    model_rot.y -= 0.2f;
+    model_rot.y -= step_size;
     break;
   case SDLK_e:
-    model_rot.z += 0.2f;
+    model_rot.z += step_size;
     break;
   case SDLK_q:
-    model_rot.z -= 0.2f;
+    model_rot.z -= step_size;
+    break;
+  case SDLK_f:
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    break;
+  case SDLK_g:
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     break;
   }
 }
@@ -153,16 +176,17 @@ void init() {
   mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
 
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
 
-  s_id = shader_load("shaders/simple.vert.glsl", "shaders/simple.frag.glsl");  
+  s_id = shader_load(vertex_shader, fragment_shader);  
 
   if(s_id == 0) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load shaders\n");
     exit(EXIT_FAILURE);
   }
 
-  if(mesh_load(&mesh, "resources/monkey.obj") == false) {
+  if(mesh_load(&mesh, obj_model) == false) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load mesh\n");
     exit(EXIT_FAILURE);
   }
@@ -181,12 +205,16 @@ void update() {
 
 void draw() {
   glClear(GL_COLOR_BUFFER_BIT);
-
+  
   mesh_bind(&mesh);
   shader_bind(s_id);
 
-  shader_set_attribs(s_id, 3*sizeof(vec3_t), 0, sizeof(vec3_t), 2*sizeof(vec3_t));
-  shader_set_uniforms(s_id, projection.m, view.m, model.m);
+  shader_set_attrib(s_id, "in_Position", 3*sizeof(vec3_t), 0);
+  shader_set_attrib(s_id, "in_Normal", 3*sizeof(vec3_t), 2*sizeof(vec3_t));
+
+  shader_set_uniform(s_id, "projection", projection.m);
+  shader_set_uniform(s_id, "view", view.m);
+  shader_set_uniform(s_id, "model", model.m);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.buf_ids[MESH_IBO]);
   glDrawElements(GL_TRIANGLES, (GLsizei)array_size(mesh.indices), GL_UNSIGNED_INT, 0);
@@ -210,7 +238,6 @@ uint32_t timer(uint32_t interval, void *param) {
   SDL_PushEvent(&event);
   return interval;
 }
-
 
 void check_gl_errors() {
   GLenum err;

@@ -139,24 +139,21 @@ void shader_bind(uint32_t s_id) {
   glUseProgram(s_id);
 }
 
-void shader_set_attribs(uint32_t s_id, size_t stride, uintptr_t vert_offset, uintptr_t uv_offset, uintptr_t norm_offset) {
+void shader_set_attrib(uint32_t s_id, const char *attrib_name, size_t stride, uintptr_t offset) {
   glUseProgram(s_id);
-  int32_t attrib_loc = glGetAttribLocation(s_id, "in_Position");
-  glVertexAttribPointer((uint32_t)attrib_loc, 3, GL_FLOAT, GL_FALSE, (GLsizei)stride, (GLvoid*)vert_offset);
-  glEnableVertexAttribArray((uint32_t)attrib_loc);
+
+  int32_t attrib_loc = glGetAttribLocation(s_id, attrib_name);
+  if(attrib_loc >= 0) {
+    glVertexAttribPointer((uint32_t)attrib_loc, 3, GL_FLOAT, GL_FALSE, (GLsizei)stride, (GLvoid*)offset);
+    glEnableVertexAttribArray((uint32_t)attrib_loc);
+  }
 }
 
-void shader_set_uniforms(uint32_t s_id, float *m_p, float *m_v, float *m_m) {
+void shader_set_uniform(uint32_t s_id, const char *uniform_name, void *data) {
   glUseProgram(s_id);
 
-  int32_t uniform_loc = glGetUniformLocation(s_id, "projection");
-  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, m_p);
-
-  uniform_loc = glGetUniformLocation(s_id, "view");
-  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, m_v);
-
-  uniform_loc = glGetUniformLocation(s_id, "model");
-  glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, m_m);
+  int32_t uniform_loc = glGetUniformLocation(s_id, uniform_name);
+  if(uniform_loc >= 0) glUniformMatrix4fv(uniform_loc, 1, GL_FALSE, data);
 }
 
 void shader_unbind() {
