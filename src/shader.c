@@ -165,6 +165,13 @@ void shader_set_uniform(uint32_t s_id, const char *uniform_name, shader_uniform_
       if(uniform_loc >= 0) glUniform3fv(uniform_loc, 1, data);
       break;
     }
+  case SHADER_UNIFORM_FLOAT:
+    {
+      int32_t uniform_loc = glGetUniformLocation(s_id, uniform_name);
+      if(uniform_loc >= 0) glUniform1f(uniform_loc, *((float*)data));
+      break;
+    }
+
   }
 }
 

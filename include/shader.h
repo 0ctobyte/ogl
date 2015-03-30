@@ -5,7 +5,8 @@
 
 typedef enum {
   SHADER_UNIFORM_MAT4,
-  SHADER_UNIFORM_VEC3
+  SHADER_UNIFORM_VEC3,
+  SHADER_UNIFORM_FLOAT
 } shader_uniform_type_t;
 
 uint32_t shader_load(const char *vertfile, const char *fragfile);

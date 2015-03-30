@@ -7,6 +7,7 @@ uniform struct Light {
   vec3 position;
   vec3 diffuse;
   vec3 ambient;
+  float ambient_coefficient;
 } light;
 
 in vec3 o_Position;
@@ -28,12 +29,17 @@ void main()
   // Calculate the cosine of the angle of incidence (brightness)
   // (no need to divide the dot product by the product of the lengths of the vectors since they have been normalized)
   // Brightness must be clamped between 0 and 1 (anything less than 0 means 0 brightness)
-  float diffuse_u = max(0.0, dot(normal, surf_to_light));
+  float diffuse_coefficient = max(0.0, dot(normal, surf_to_light));
+
+  // Calculate the diffuse component
+  vec3 diffuse = diffuse_coefficient * surface_col * light.diffuse;
+
+  // Calculate the ambient component
+  vec3 ambient = light.ambient_coefficient * surface_col * light.ambient;
 
   // Calculate the final color based on
-  // 1. The angle of incidence: diffuse_u (brightness - the diffuse coefficient)
-  // 2. The color/intensities of the light
-  // 3. The surface color
-  f_Color = vec4(diffuse_u * light.diffuse * surface_col, 1.0f);
+  // 1. The diffuse component
+  // 2. The ambient component
+  f_Color = vec4(diffuse + ambient, 1.0f);
 }
 

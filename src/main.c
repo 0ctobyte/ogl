@@ -127,9 +127,10 @@ int main(int argc, char **argv) {
 }
 
 static uint32_t s_id;
-static float step_size = 0.2f, rot_mult = 10.0f;
+static float step_size = 0.2f, rot_mult = 10.0f, ambient_coefficient = 0.005f;
 static vec3_t camera, light_position, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
-static vec3_t surface_color, light_color;
+static vec3_t surface_color, white = {1.0f, 1.0f, 1.0f}, black = {0.0f, 0.0f, 0.0f};
+static vec3_t diffuse_color = {1.0f, 1.0f, 1.0f}, ambient_color = {1.0f, 1.0f, 1.0f};
 static mesh_t mesh;
 static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
 
@@ -142,7 +143,7 @@ void init() {
   
   // The surface light is a soft grey whereas the point light is pure white light
   surface_color.x = 0.75f; surface_color.y = 0.75f; surface_color.z = 0.75f;
-  light_color.x = 1.0f; light_color.y = 1.0f; light_color.z = 1.0f;
+  diffuse_color.x = 1.0f; diffuse_color.y = 1.0f; diffuse_color.z = 1.0f;
   //light_position.x = -100.0f; light_position.y = 100.0f; light_position.z = 100.0f;
 
   // Set the viewport to the current window dimensions
@@ -226,6 +227,10 @@ void key_down(SDL_Event *event) {
   case SDLK_g:
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     break;
+  case SDLK_p:
+    if(diffuse_color.x > 0.0f) diffuse_color = black;
+    else diffuse_color = white;
+    break;
   }
 }
 
@@ -273,7 +278,9 @@ void draw() {
   shader_set_uniform(s_id, "normalmodelview", SHADER_UNIFORM_MAT4, normalmodelview.m);
   shader_set_uniform(s_id, "surface_col", SHADER_UNIFORM_VEC3, &surface_color);
   shader_set_uniform(s_id, "light.position", SHADER_UNIFORM_VEC3, &light_position); 
-  shader_set_uniform(s_id, "light.color", SHADER_UNIFORM_VEC3, &light_color); 
+  shader_set_uniform(s_id, "light.diffuse", SHADER_UNIFORM_VEC3, &diffuse_color); 
+  shader_set_uniform(s_id, "light.ambient", SHADER_UNIFORM_VEC3, &ambient_color); 
+  shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &ambient_coefficient); 
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.buf_ids[MESH_IBO]);
   glDrawElements(GL_TRIANGLES, (GLsizei)array_size(mesh.indices), GL_UNSIGNED_INT, 0);
