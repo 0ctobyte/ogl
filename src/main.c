@@ -220,10 +220,10 @@ void key_down(SDL_Event *event) {
     model_rot.z -= rot_mult*step_size;
     break;
   case SDLK_f:
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT, GL_LINE);
     break;
   case SDLK_g:
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glPolygonMode(GL_FRONT, GL_FILL);
     break;
   }
 }
