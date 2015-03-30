@@ -78,12 +78,12 @@ void mat4_rotatef(mat4_t *mat, float angle, float x, float y, float z) {
   v = vec3_normalize(&v);
   A.m[0] = (v.x*v.x)*oc+c;
   A.m[1] = v.y*v.x*oc+v.z*s;
-  A.m[2] = v.x*v.z*oc-v.y*v.z;
+  A.m[2] = v.x*v.z*oc-v.y*s;
   A.m[4] = v.x*v.y*oc-v.z*s;
   A.m[5] = (v.y*v.y)*oc+c;
-  A.m[6] = v.y*v.z*oc+v.x*v.z;
+  A.m[6] = v.y*v.z*oc+v.x*s;
   A.m[8] = v.x*v.z*oc+v.y*s;
-  A.m[9] = v.y*v.z*oc+v.y*s;
+  A.m[9] = v.y*v.z*oc-v.x*s;
   A.m[10] = (v.z*v.z)*oc+c;
   mat4_mult(mat, &A);
 }
@@ -99,12 +99,12 @@ void mat4_rotate(mat4_t *mat, float angle, const vec3_t *u) {
   float oc = 1-c;
   A.m[0] = (v.x*v.x)*oc+c;
   A.m[1] = v.y*v.x*oc+v.z*s;
-  A.m[2] = v.x*v.z*oc-v.y*v.z;
+  A.m[2] = v.x*v.z*oc-v.y*s;
   A.m[4] = v.x*v.y*oc-v.z*s;
   A.m[5] = (v.y*v.y)*oc+c;
-  A.m[6] = v.y*v.z*oc+v.x*v.z;
+  A.m[6] = v.y*v.z*oc+v.x*s;
   A.m[8] = v.x*v.z*oc+v.y*s;
-  A.m[9] = v.y*v.z*oc+v.y*s;
+  A.m[9] = v.y*v.z*oc-v.x*s;
   A.m[10] = (v.z*v.z)*oc+c;
   mat4_mult(mat, &A);
 }
