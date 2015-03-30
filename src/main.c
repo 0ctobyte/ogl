@@ -17,6 +17,7 @@ void draw();
 uint32_t timer(uint32_t interval, void *param);
 
 static char obj_model[256], vertex_shader[256], fragment_shader[256];
+static int32_t w, h;
 
 int main(int argc, char **argv) { 
   bool running = true;
@@ -70,7 +71,17 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
+  // Get size of SDL drawable portion of the window
+  SDL_GL_GetDrawableSize(window, &w, &h);
+
+  // Get the OpenGL context settings
+  int32_t minor_version, major_version, profile_mask;
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major_version);
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor_version);
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profile_mask);
+
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SDL version: %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SDL OpenGL context: %d.%d %s\n", major_version, minor_version, (profile_mask == SDL_GL_CONTEXT_PROFILE_CORE) ? "core profile" : ((profile_mask == SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) ? "compatibility profile" : "ES profile"));
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL vendor: %s\n", glGetString(GL_VENDOR));
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL renderer: %s\n", glGetString(GL_RENDERER));
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL version: %s\n", glGetString(GL_VERSION));
@@ -125,7 +136,7 @@ static mat4_t view = MAT4_IDENTITY;
 static mat4_t model = MAT4_IDENTITY;
 
 void init() {
-  mat4_perspective(&projection, 60.0f, 640.0f/480.0f, 1.0f, 10000.0f);
+  mat4_perspective(&projection, 60.0f, (float)w/(float)h, 1.0f, 10000.0f);
   mat4_translate(&model, &model_pos);
 
   // The surface light is a soft grey whereas the point light is pure white light
@@ -133,12 +144,22 @@ void init() {
   light_color.x = 1.0f; light_color.y = 1.0f; light_color.z = 1.0f;
   //light_position.x = -100.0f; light_position.y = 100.0f; light_position.z = 100.0f;
 
+  // Set the viewport to the current window dimensions
+  glViewport(0, 0, w, h);
+
+  // Enable scissor test and set scissor box to the size of the window
+  glEnable(GL_SCISSOR_TEST);
+  glScissor(0, 0, w, h);
+
+  // Set the color and dpeth buffer clear values
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glClearDepth(1.0f);
 
+  // Enable back face culling
   glEnable(GL_CULL_FACE);
   glCullFace(GL_BACK);
 
+  // Enable depth testing
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
   glEnable(GL_DEPTH_CLAMP);
