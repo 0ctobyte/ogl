@@ -131,13 +131,15 @@ static float step_size = 0.2f, rot_mult = 10.0f;
 static vec3_t camera, light_position, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static vec3_t surface_color, light_color;
 static mesh_t mesh;
-static mat4_t projection = MAT4_IDENTITY; 
-static mat4_t view = MAT4_IDENTITY;
-static mat4_t model = MAT4_IDENTITY;
+static mat4_t projection = MAT4_IDENTITY, view = MAT4_IDENTITY, model = MAT4_IDENTITY, modelview = MAT4_IDENTITY; 
 
 void init() {
   mat4_perspective(&projection, 60.0f, (float)w/(float)h, 1.0f, 10000.0f);
   mat4_translate(&model, &model_pos);
+  
+  modelview = view;
+  mat4_inverse(&modelview);
+  mat4_mult(&modelview, &model);
 
   // The surface light is a soft grey whereas the point light is pure white light
   surface_color.x = 0.75f; surface_color.y = 0.75f; surface_color.z = 0.75f;
@@ -238,13 +240,18 @@ void update() {
   mat4_rotatef(&model, model_rot.y, 0.0f, 1.0f, 0.0f);
   mat4_rotatef(&model, model_rot.z, 0.0f, 0.0f, 1.0f);
 
+  // Update the modelview matrix, improves performance since shaders don't have to compute this for every vertex
+  modelview = view;
+  mat4_inverse(&modelview);
+  mat4_mult(&modelview, &model);
+
   // The point light will track the camera
   light_position = camera;
 }
 
 void draw() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  
   mesh_bind(&mesh);
   shader_bind(s_id);
 
@@ -254,8 +261,7 @@ void draw() {
 
   // Set the uniform variables
   shader_set_uniform(s_id, "projection", SHADER_UNIFORM_MAT4, projection.m);
-  shader_set_uniform(s_id, "view", SHADER_UNIFORM_MAT4, view.m);
-  shader_set_uniform(s_id, "model", SHADER_UNIFORM_MAT4, model.m);
+  shader_set_uniform(s_id, "modelview", SHADER_UNIFORM_MAT4, modelview.m);
   shader_set_uniform(s_id, "surface_col", SHADER_UNIFORM_VEC3, &surface_color);
   shader_set_uniform(s_id, "light.position", SHADER_UNIFORM_VEC3, &light_position); 
   shader_set_uniform(s_id, "light.color", SHADER_UNIFORM_VEC3, &light_color); 

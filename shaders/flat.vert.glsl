@@ -3,11 +3,10 @@
 in vec4 in_Position;
 
 uniform mat4 projection;
-uniform mat4 view;
-uniform mat4 model;
+uniform mat4 modelview;
 
 void main()
 {
-  gl_Position = projection*inverse(view)*model*in_Position;
+  gl_Position = projection*modelview*in_Position;
 }
 
