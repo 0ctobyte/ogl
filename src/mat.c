@@ -71,7 +71,7 @@ void mat4_rotatef(mat4_t *mat, float angle, float x, float y, float z) {
   vec3_t v = {x, y, z};
 
   // Calculate angle in radians
-  angle = angle*180.0f/(float)M_PI;
+  angle = angle*(float)M_PI/180.0f;
   float c = (float)cos(angle);
   float s = (float)sin(angle);
   float oc = 1-c;
@@ -93,7 +93,7 @@ void mat4_rotate(mat4_t *mat, float angle, const vec3_t *u) {
   vec3_t v = vec3_normalize(u);
   
   // Calculate angle in radians
-  angle = angle*180.0f/(float)M_PI;
+  angle = angle*(float)M_PI/180.0f;
   float c = (float)cos(angle);
   float s = (float)sin(angle);
   float oc = 1-c;

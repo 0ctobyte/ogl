@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 }
 
 static uint32_t s_id;
-static float step_size = 0.2f;
+static float step_size = 0.2f, rot_mult = 10.0f;
 static vec3_t camera, light_position, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static vec3_t surface_color, light_color;
 static mesh_t mesh;
@@ -202,22 +202,22 @@ void key_down(SDL_Event *event) {
     camera.x -= step_size;
     break;
   case SDLK_w:
-    model_rot.x += step_size;
+    model_rot.x += rot_mult*step_size;
     break;
   case SDLK_s:
-    model_rot.x -= step_size;
+    model_rot.x -= rot_mult*step_size;
     break;
   case SDLK_d:
-    model_rot.y += step_size;
+    model_rot.y += rot_mult*step_size;
     break;
   case SDLK_a:
-    model_rot.y -= step_size;
+    model_rot.y -= rot_mult*step_size;
     break;
   case SDLK_e:
-    model_rot.z += step_size;
+    model_rot.z += rot_mult*step_size;
     break;
   case SDLK_q:
-    model_rot.z -= step_size;
+    model_rot.z -= rot_mult*step_size;
     break;
   case SDLK_f:
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
