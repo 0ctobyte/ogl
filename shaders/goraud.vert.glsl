@@ -5,6 +5,7 @@
 struct LightSource {
   vec3 position;
   vec3 intensities;
+  vec3 gamma;
   float attenuation;
   float ambient_coefficient;
 };
@@ -24,7 +25,7 @@ struct Camera {
 uniform mat4 modelviewprojection;
 uniform mat4 modelview;
 uniform mat4 normalmodelview;
-uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), 0.005, 0.04);
+uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 0.005, 0.04);
 uniform Material mtl = Material(vec3(0.75, 0.75, 0.75), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 80.0, 1.0);
 uniform Camera cam = Camera(vec3(0.0, 0.0, 0.0));
 
@@ -73,7 +74,9 @@ void main()
   // 2. The ambient component
   // 3. The specular component
   // 4. The distance from light source (attenuation)
-  f_Color = vec4(max(ambient, attenuation * (diffuse + specular)), mtl.transparency);
+  // 5. Gamma correction (if needed)
+  vec3 linear_color = max(ambient, attenuation * (diffuse + specular));
+  f_Color = vec4(pow(linear_color, light.gamma), mtl.transparency);
 
   gl_Position = modelviewprojection*vec4(in_Position, 1.0);
 }

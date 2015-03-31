@@ -129,6 +129,7 @@ int main(int argc, char **argv) {
 typedef struct {
   vec3_t position;
   vec3_t intensities;
+  vec3_t gamma;
   float attenuation;
   float ambient_coefficient;
 } lightsource_t;
@@ -137,7 +138,7 @@ static uint32_t s_id;
 static mesh_t mesh;
 static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
-static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, 0.005f, 0.04f};
+static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, 0.005f, 0.04f};
 
 void init() {
   // Set up a perspective projection matrix
@@ -277,6 +278,7 @@ void draw() {
   shader_set_uniform(s_id, "normalmodelview", SHADER_UNIFORM_MAT4, normalmodelview.m);
   shader_set_uniform(s_id, "light.position", SHADER_UNIFORM_VEC3, &light.position); 
   shader_set_uniform(s_id, "light.intensities", SHADER_UNIFORM_VEC3, &light.intensities); 
+  shader_set_uniform(s_id, "light.gamma", SHADER_UNIFORM_VEC3, &light.gamma); 
   shader_set_uniform(s_id, "light.attenuation", SHADER_UNIFORM_FLOAT, &light.attenuation); 
   shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &light.ambient_coefficient); 
   shader_set_uniform(s_id, "came.position", SHADER_UNIFORM_VEC3, &camera); 
