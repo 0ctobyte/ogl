@@ -36,10 +36,10 @@ void main()
   // Calculate the cosine of the angle of incidence (brightness)
   // (no need to divide the dot product by the product of the lengths of the vectors since they have been normalized)
   // Brightness must be clamped between 0 and 1 (anything less than 0 means 0 brightness)
-  float diffuse_coefficient = max(0.0, dot(o_Normal, normalize(surf_to_light)));
+  float brightness = max(0.0, dot(o_Normal, normalize(surf_to_light)));
 
   // Calculate the diffuse component
-  vec3 diffuse = diffuse_coefficient * mtl.diffuse * light.intensities;
+  vec3 diffuse = brightness * mtl.diffuse * light.intensities;
 
   // Calculate the ambient component
   vec3 ambient = light.ambient_coefficient * mtl.ambient * light.intensities;

@@ -40,10 +40,10 @@ void main()
   vec3 vert_to_light = light.position - vert_pos;
   
   // Calculate the angle of incidence brightness
-  float diffuse_coefficient = max(0.0, dot(normal, normalize(vert_to_light)));
+  float brightness = max(0.0, dot(normal, normalize(vert_to_light)));
 
   // Calculate the diffuse component
-  vec3 diffuse = diffuse_coefficient * mtl.ambient * light.intensities;
+  vec3 diffuse = brightness * mtl.ambient * light.intensities;
 
   // Calculate the ambient component
   vec3 ambient = light.ambient_coefficient * mtl.ambient * light.intensities;
