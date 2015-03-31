@@ -260,12 +260,10 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
               t_index--;
               v = array_at(uv, t_index);
               array_set(mesh->vertices, index*3+1, v);
-            } else {
-              next++;
-            }
+            } 
 
             // Attempt to parse the normal index, check to make sure a normal index exists
-            uint32_t n_index = (uint32_t)strtoul(next, NULL, 10);
+            uint32_t n_index = (uint32_t)strtoul(next+1, NULL, 10);
             if(n_index != 0) {
               // Now append the vertex normal attribute into the interleaved vertex attribute array
               n_index--;
