@@ -4,17 +4,43 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "vec.h"
 #include "array.h"
 
-#define MESH_NUM_BUFFERS (3)
-#define MESH_VBO (0)
-#define MESH_IBO (1)
+typedef struct {
+  vec3_t diffuse;
+  vec3_t ambient;
+  vec3_t specular;
+
+  // This is essentially the specular exponent
+  float shininess;
+  float transparency;
+} material_t;
+
+// A group of faces using the same material
+typedef struct {
+  // Handle to the OpenGL index buffer object
+  uint32_t ibo;
+
+  // The material used for this group of faces
+  material_t mtl;
+
+  // List of indices in this face group
+  array_t *indices;
+} face_group_t;
 
 typedef struct {
-  array_t *vertices;
-  array_t *indices;
+  // Handle to the OpenGL vertex array object
   uint32_t vao;
-  uint32_t buf_ids[MESH_NUM_BUFFERS];
+
+  // Handle to the OpenGL vertex buffer object (vertex attribute data)
+  uint32_t vbo;
+  
+  // List of vertex attributes (position, texture, normals)
+  array_t *vertices;
+
+  // List of face groups
+  array_t *faces;
 } mesh_t;
 
 bool mesh_load(mesh_t *mesh, const char *objfile);

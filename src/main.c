@@ -133,17 +133,11 @@ typedef struct {
   float ambient_coefficient;
 } lightsource_t;
 
-typedef struct {
-  vec3_t diffuse;
-  vec3_t ambient;
-} material_t;
-
 static uint32_t s_id;
 static mesh_t mesh;
 static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
 static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, 0.005f, 0.04f};
-static material_t mtl = {{1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}};
 
 void init() {
   // Set up a perspective projection matrix
@@ -188,7 +182,6 @@ void init() {
 }
 
 void key_down(SDL_Event *event) {
- vec3_t white = {1.0f, 1.0f, 1.0f}, black = {0.0f, 0.0f, 0.0f};
  float step_size = 0.2f, rot_mult = 10.0f;
   switch(event->key.keysym.sym) {
   case SDLK_UP:
@@ -236,8 +229,6 @@ void key_down(SDL_Event *event) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     break;
   case SDLK_p:
-    if(mtl.diffuse.x > 0.0f || mtl.diffuse.y > 0.0f || mtl.diffuse.z > 0.0f) mtl.diffuse = black;
-    else mtl.diffuse = white;
     break;
   }
 }
@@ -288,11 +279,20 @@ void draw() {
   shader_set_uniform(s_id, "light.intensities", SHADER_UNIFORM_VEC3, &light.intensities); 
   shader_set_uniform(s_id, "light.attenuation", SHADER_UNIFORM_FLOAT, &light.attenuation); 
   shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &light.ambient_coefficient); 
-  shader_set_uniform(s_id, "mtl.diffuse", SHADER_UNIFORM_VEC3, &mtl.diffuse);
-  shader_set_uniform(s_id, "mtl.ambient", SHADER_UNIFORM_VEC3, &mtl.ambient);
-  
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.buf_ids[MESH_IBO]);
-  glDrawElements(GL_TRIANGLES, (GLsizei)array_size(mesh.indices), GL_UNSIGNED_INT, 0);
+   
+  size_t size = array_size(mesh.faces);
+  for(uint32_t i = 0; i < size; i++) {
+    face_group_t *face = (face_group_t*)array_at(mesh.faces, i);
+
+    shader_set_uniform(s_id, "mtl.diffuse", SHADER_UNIFORM_VEC3, &face->mtl.diffuse);
+    shader_set_uniform(s_id, "mtl.ambient", SHADER_UNIFORM_VEC3, &face->mtl.ambient);
+    shader_set_uniform(s_id, "mtl.specular", SHADER_UNIFORM_VEC3, &face->mtl.specular);
+    shader_set_uniform(s_id, "mtl.shininess", SHADER_UNIFORM_FLOAT, &face->mtl.shininess);
+    shader_set_uniform(s_id, "mtl.transparency", SHADER_UNIFORM_VEC3, &face->mtl.transparency);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->ibo);
+    glDrawElements(GL_TRIANGLES, (GLsizei)array_size(face->indices), GL_UNSIGNED_INT, 0);
+  }
 
   shader_unbind();
   mesh_unbind();

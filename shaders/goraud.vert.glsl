@@ -12,16 +12,17 @@ struct LightSource {
 struct Material {
   vec3 diffuse;
   vec3 ambient;
+  vec3 specular;
+  float shininess;
+  float transparency;
 };
 
 uniform mat4 modelviewprojection;
 uniform mat4 modelview;
 uniform mat4 normalmodelview;
-uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0),
-                                        vec3(1.0, 1.0, 1.0),
-                                        0.005, 0.04);
-uniform Material mtl = Material(vec3(0.75, 0.75, 0.75),
-                                vec3(1.0, 1.0, 1.0));
+uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), 0.005, 0.04);
+uniform Material mtl = Material(vec3(0.75, 0.75, 0.75), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 80.0, 1.0);
+
 in vec3 in_Position;
 in vec3 in_Normal; 
 
@@ -43,7 +44,7 @@ void main()
   float brightness = max(0.0, dot(normal, normalize(vert_to_light)));
 
   // Calculate the diffuse component
-  vec3 diffuse = brightness * mtl.ambient * light.intensities;
+  vec3 diffuse = brightness * mtl.diffuse * light.intensities;
 
   // Calculate the ambient component
   vec3 ambient = light.ambient_coefficient * mtl.ambient * light.intensities;
@@ -55,8 +56,8 @@ void main()
   // 1. The diffuse component
   // 2. The ambient component
   // 3. The distance from light source (attenuation)
-  f_Color = vec4(max(ambient, attenuation * diffuse), 1.0f);
+  f_Color = vec4(max(ambient, attenuation * diffuse), mtl.transparency);
 
-  gl_Position = modelviewprojection*vec4(in_Position, 1);
+  gl_Position = modelviewprojection*vec4(in_Position, 1.0);
 }
 
