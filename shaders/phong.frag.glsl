@@ -17,10 +17,15 @@ struct Material {
   float transparency;
 };
 
+struct Camera {
+  vec3 position;
+};
+
 uniform mat4 modelview;
 uniform mat4 normalmodelview;
 uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), 0.005, 0.04);
 uniform Material mtl = Material(vec3(0.75, 0.75, 0.75), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 80.0, 1.0);
+uniform Camera cam = Camera(vec3(0.0, 0.0, 0.0));
 
 // The normals and positions are interpolated for each pixel
 smooth in vec3 o_Position;
@@ -41,16 +46,28 @@ void main()
   // Calculate the diffuse component
   vec3 diffuse = brightness * mtl.diffuse * light.intensities;
 
+  // Calculate the angle of reflectance.
+  // The surf_to_light needs to go in the opposite direction in order to represent the angle of incidence
+  vec3 incidence = normalize(-surf_to_light);
+  vec3 reflection = reflect(incidence, o_Normal);
+  vec3 surf_to_cam = normalize(cam.position - o_Position);
+  float specular_brightness = max(0.0, dot(surf_to_cam, reflection));
+  float specular_coefficient = (brightness > 0.0) ? pow(specular_brightness, mtl.shininess) : 0.0;
+
+  // Calculate the specular component
+  vec3 specular = specular_coefficient * mtl.specular * light.intensities;
+
   // Calculate the ambient component
   vec3 ambient = light.ambient_coefficient * mtl.ambient * light.intensities;
 
   // Calculate the attenuation based on distance from light source
   float attenuation = 1.0 / (1.0 + light.attenuation * pow(length(surf_to_light), 2));
-
+  
   // Calculate the final color based on
   // 1. The diffuse component
   // 2. The ambient component
-  // 3. The distance from the light source (attenuation)
-  f_Color = vec4(max(ambient, attenuation * diffuse), mtl.transparency);
+  // 3. The specular component
+  // 4. The distance from the light source (attenuation)
+  f_Color = vec4(max(ambient, attenuation * (diffuse + specular)), mtl.transparency);
 }
 

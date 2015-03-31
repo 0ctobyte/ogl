@@ -17,11 +17,16 @@ struct Material {
   float transparency;
 };
 
+struct Camera {
+  vec3 position;
+};
+
 uniform mat4 modelviewprojection;
 uniform mat4 modelview;
 uniform mat4 normalmodelview;
 uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), 0.005, 0.04);
 uniform Material mtl = Material(vec3(0.75, 0.75, 0.75), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 80.0, 1.0);
+uniform Camera cam = Camera(vec3(0.0, 0.0, 0.0));
 
 in vec3 in_Position;
 in vec3 in_Normal; 
@@ -41,10 +46,21 @@ void main()
   vec3 vert_to_light = light.position - vert_pos;
   
   // Calculate the angle of incidence brightness
-  float diffuse_coefficient = max(0.0, dot(normal, normalize(vert_to_light)));
+  float brightness = max(0.0, dot(normal, normalize(vert_to_light)));
 
   // Calculate the diffuse component
-  vec3 diffuse = diffuse_coefficient * mtl.diffuse * light.intensities;
+  vec3 diffuse = brightness * mtl.diffuse * light.intensities;
+
+  // Calculate the angle of reflectance.
+  // The surf_to_light needs to go in the opposite direction in order to represent the angle of incidence
+  vec3 incidence = normalize(-vert_to_light);
+  vec3 reflection = reflect(incidence, normal);
+  vec3 vert_to_cam = normalize(cam.position - vert_pos);
+  float specular_brightness = max(0.0, dot(vert_to_cam, reflection));
+  float specular_coefficient = (brightness > 0.0) ? pow(specular_brightness, mtl.shininess) : 0.0;
+
+  // Calculate the specular component
+  vec3 specular = specular_coefficient * mtl.specular * light.intensities;
 
   // Calculate the ambient component
   vec3 ambient = light.ambient_coefficient * mtl.ambient * light.intensities;
@@ -55,8 +71,9 @@ void main()
   // Final color based on 
   // 1. The diffuse component
   // 2. The ambient component
-  // 3. The distance from light source (attenuation)
-  f_Color = vec4(max(ambient, attenuation * diffuse), mtl.transparency);
+  // 3. The specular component
+  // 4. The distance from light source (attenuation)
+  f_Color = vec4(max(ambient, attenuation * (diffuse + specular)), mtl.transparency);
 
   gl_Position = modelviewprojection*vec4(in_Position, 1.0);
 }

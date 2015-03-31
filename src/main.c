@@ -279,6 +279,7 @@ void draw() {
   shader_set_uniform(s_id, "light.intensities", SHADER_UNIFORM_VEC3, &light.intensities); 
   shader_set_uniform(s_id, "light.attenuation", SHADER_UNIFORM_FLOAT, &light.attenuation); 
   shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &light.ambient_coefficient); 
+  shader_set_uniform(s_id, "came.position", SHADER_UNIFORM_VEC3, &camera); 
    
   size_t size = array_size(mesh.faces);
   for(uint32_t i = 0; i < size; i++) {
