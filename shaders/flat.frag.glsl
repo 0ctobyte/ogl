@@ -1,11 +1,17 @@
 #version 410 core
 
-uniform vec3 surface_col;
+// This shader computes diffuse lighting based on a flat per-vertex shading model
 
-out vec4 fColor;
+struct Material {
+  vec3 diffuse;
+};
+
+uniform Material mtl = Material(vec3(0.75, 0.75, 0.75));
+
+flat out vec4 f_Color;
 
 void main()
 {
-  fColor = vec4(surface_col, 1.0f);
+  f_Color = vec4(mtl.diffuse, 1.0f);
 }
 

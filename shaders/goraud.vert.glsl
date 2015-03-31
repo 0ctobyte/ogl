@@ -25,7 +25,8 @@ uniform Material mtl = Material(vec3(0.75, 0.75, 0.75),
 in vec3 in_Position;
 in vec3 in_Normal; 
 
-out vec4 f_Color;
+// The per-vertex color is interpolated over the pixels
+smooth out vec4 f_Color;
 
 void main()
 {

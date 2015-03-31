@@ -21,8 +21,10 @@ uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0),
                                         0.005, 0.04);
 uniform Material mtl = Material(vec3(0.75, 0.75, 0.75),
                                 vec3(1.0, 1.0, 1.0));
-in vec3 o_Position;
-in vec3 o_Normal; 
+
+// The normals and positions are interpolated for each pixel
+smooth in vec3 o_Position;
+smooth in vec3 o_Normal; 
 
 out vec4 f_Color;
 

@@ -7,8 +7,9 @@ uniform mat4 normalmodelview;
 in vec3 in_Position;
 in vec3 in_Normal;
 
-out vec3 o_Position;
-out vec3 o_Normal;
+// The normals and positions are interpolated for each pixel
+smooth out vec3 o_Position;
+smooth out vec3 o_Normal;
 
 void main()
 {
