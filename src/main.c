@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
       update();
       break;
     }
-    //check_gl_errors();
+    check_gl_errors();
   }
 
   return 0;
@@ -292,7 +292,7 @@ void draw() {
     shader_set_uniform(s_id, "mtl.ambient", SHADER_UNIFORM_VEC3, &face->mtl.ambient);
     shader_set_uniform(s_id, "mtl.specular", SHADER_UNIFORM_VEC3, &face->mtl.specular);
     shader_set_uniform(s_id, "mtl.shininess", SHADER_UNIFORM_FLOAT, &face->mtl.shininess);
-    shader_set_uniform(s_id, "mtl.transparency", SHADER_UNIFORM_VEC3, &face->mtl.transparency);
+    shader_set_uniform(s_id, "mtl.transparency", SHADER_UNIFORM_FLOAT, &face->mtl.transparency);
     
     uint32_t use_tex = (face->mtl.tex.texture == NULL) ? 0 : 1;
     
@@ -302,7 +302,7 @@ void draw() {
     glBindTexture(GL_TEXTURE_2D, face->mtl.tex.texID);
 
     uint32_t texture_unit = 0;
-    shader_set_uniform(s_id, "tex", SHADER_UNIFORM_UINT, &texture_unit);
+    shader_set_uniform(s_id, "tex", SHADER_UNIFORM_INT, &texture_unit);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->ibo);
     glDrawElements(GL_TRIANGLES, (GLsizei)array_size(face->indices), GL_UNSIGNED_INT, 0);

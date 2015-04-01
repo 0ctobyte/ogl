@@ -41,7 +41,7 @@ void _mesh_gen_index_buffers(mesh_t *mesh) {
   }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glBindVertexArray(mesh->vao);
+  glBindVertexArray(0);
 }
 
 void _mesh_create_face_group(mesh_t *mesh) {
@@ -78,10 +78,13 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   }
 
   // Get the OpenGL format
+  uint32_t internal_format = 0;
   if(faces->mtl.tex.texture->format->BytesPerPixel == 3) {
-    faces->mtl.tex.format = GL_RGB;
+    faces->mtl.tex.format = (faces->mtl.tex.texture->format->Rmask == 0x000000ff) ? GL_RGB : GL_BGR;
+    internal_format = GL_RGB;
   } else if(faces->mtl.tex.texture->format->BytesPerPixel == 4) {
-    faces->mtl.tex.format = GL_RGBA;
+    faces->mtl.tex.format = (faces->mtl.tex.texture->format->Rmask == 0x000000ff) ? GL_RGBA : GL_BGRA;
+    internal_format = GL_RGBA;
   } else {
     SDL_FreeSurface(faces->mtl.tex.texture);
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Unsupported pixel format for texture: %s\n", tex_filename);
@@ -99,7 +102,7 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   // Upload the texture pixel data
-  glTexImage2D(GL_TEXTURE_2D, 0, (GLint)faces->mtl.tex.format, (GLsizei)faces->mtl.tex.texture->w, (GLsizei)faces->mtl.tex.texture->h, 0, faces->mtl.tex.format, GL_UNSIGNED_BYTE, faces->mtl.tex.texture->pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, (GLint)internal_format, (GLsizei)faces->mtl.tex.texture->w, (GLsizei)faces->mtl.tex.texture->h, 0, faces->mtl.tex.format, GL_UNSIGNED_BYTE, faces->mtl.tex.texture->pixels);
 
   // Unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0);
