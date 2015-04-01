@@ -43,7 +43,8 @@ void main()
   vec3 surf_to_light = light.position - o_Position;
 
   // Determine whether use texture or diffuse material color
-  vec4 surface_color = (mtl.use_texture) ? texture(tex, vec2(o_TexCoord)) : vec4(mtl.diffuse, 1.0);
+  vec4 surface_color = vec4(mtl.diffuse, 1.0);
+  if(mtl.use_texture) surface_color = surface_color * texture(tex, vec2(o_TexCoord));
 
   // Calculate the cosine of the angle of incidence (brightness)
   // (no need to divide the dot product by the product of the lengths of the vectors since they have been normalized)
