@@ -279,6 +279,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   mesh->vertices = array_create(num_attribs, sizeof(vec3_t));
   vec3_t z = {0.0f, 0.0f, 0.0f};
   for(uint32_t i = 0; i < num_attribs; i+=3) {
+    // This is used as a marker to indicate that a texture coordinate has not been set
     vec3_t u = {0.0f, 0.0f, -1.0f};
     array_append(mesh->vertices, &z);
     array_append(mesh->vertices, &u);
