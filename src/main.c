@@ -169,6 +169,10 @@ void init() {
   glDepthMask(GL_TRUE);
   glDepthRange(0.0f, 1.0f);
 
+  // Enable alpha blending
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   s_id = shader_load(vertex_shader, fragment_shader);  
 
   if(s_id == 0) {
