@@ -270,6 +270,7 @@ void draw() {
 
   // Set the per vertex attributes for the shader
   shader_set_attrib(s_id, "in_Position", 3*sizeof(vec3_t), 0);
+  shader_set_attrib(s_id, "in_TexCoord", 3*sizeof(vec3_t), sizeof(vec3_t));
   shader_set_attrib(s_id, "in_Normal", 3*sizeof(vec3_t), 2*sizeof(vec3_t));
 
   // Set the uniform variables
@@ -292,6 +293,16 @@ void draw() {
     shader_set_uniform(s_id, "mtl.specular", SHADER_UNIFORM_VEC3, &face->mtl.specular);
     shader_set_uniform(s_id, "mtl.shininess", SHADER_UNIFORM_FLOAT, &face->mtl.shininess);
     shader_set_uniform(s_id, "mtl.transparency", SHADER_UNIFORM_VEC3, &face->mtl.transparency);
+    
+    uint32_t use_tex = (face->mtl.tex.texture == NULL) ? 0 : 1;
+    
+    shader_set_uniform(s_id, "mtl.use_texture", SHADER_UNIFORM_UINT, &use_tex);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, face->mtl.tex.texID);
+
+    uint32_t texture_unit = 0;
+    shader_set_uniform(s_id, "tex", SHADER_UNIFORM_UINT, &texture_unit);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->ibo);
     glDrawElements(GL_TRIANGLES, (GLsizei)array_size(face->indices), GL_UNSIGNED_INT, 0);

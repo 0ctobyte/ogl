@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_log.h>
 #include <OpenGL/gl3.h>
 
@@ -56,9 +57,53 @@ void _mesh_create_face_group(mesh_t *mesh) {
   face.mtl.specular = (vec3_t){1.0f, 1.0f, 1.0f};
   face.mtl.shininess = 80.0f;
   face.mtl.transparency = 1.0f;
+  face.mtl.tex.texID = 0;
+  face.mtl.tex.texture = NULL;
 
   // Add the face to the mesh
   array_append(mesh->faces, &face);
+}
+
+void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
+  // Get the latest face group
+  face_group_t *faces = (face_group_t*)array_at(mesh->faces, (uint32_t)array_size(mesh->faces)-1);
+
+  // Load the BMP
+  faces->mtl.tex.texture = SDL_LoadBMP(tex_filename);
+
+  // Make sure the file exists and was loaded properly
+  if(faces->mtl.tex.texture == NULL) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading tex file\n");
+    return;
+  }
+
+  // Get the OpenGL format
+  if(faces->mtl.tex.texture->format->BytesPerPixel == 3) {
+    faces->mtl.tex.format = GL_RGB;
+  } else if(faces->mtl.tex.texture->format->BytesPerPixel == 4) {
+    faces->mtl.tex.format = GL_RGBA;
+  } else {
+    SDL_FreeSurface(faces->mtl.tex.texture);
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Unsupported pixel format for texture: %s\n", tex_filename);
+    return;
+  }
+  
+  glBindVertexArray(mesh->vao);
+
+  // Generate the texture handle
+  glGenTextures(1, &faces->mtl.tex.texID);
+  glBindTexture(GL_TEXTURE_2D, faces->mtl.tex.texID);
+
+  // Set the texture parameters
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // Upload the texture pixel data
+  glTexImage2D(GL_TEXTURE_2D, 0, (GLint)faces->mtl.tex.format, (GLsizei)faces->mtl.tex.texture->w, (GLsizei)faces->mtl.tex.texture->h, 0, faces->mtl.tex.format, GL_UNSIGNED_BYTE, faces->mtl.tex.texture->pixels);
+
+  // Unbind the texture
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glBindVertexArray(0);
 }
 
 void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
@@ -131,6 +176,13 @@ void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
         pch = strtok(NULL, " ");
       }
       face->mtl.specular = v;
+    } else if(strcmp(pch, "map_Kd") == 0) {
+      pch = strtok(NULL, " ");
+      if(pch == NULL) continue;
+      char s[256];
+      pch[strlen(pch)-1] = '\0';
+      snprintf(s, 256, "resources/%s", pch);
+      _mesh_load_texture(mesh, s);
     }
   }
 
@@ -324,6 +376,7 @@ void mesh_bind(mesh_t *mesh) {
 void mesh_unbind() {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
   glBindVertexArray(0);
 }
 
@@ -340,6 +393,10 @@ void mesh_delete(mesh_t *mesh) {
     // Delete the index array
     face_group_t *face = (face_group_t*)array_at(mesh->faces, i);
     array_delete(face->indices);
+
+    // Delete the texture if it exists
+    SDL_FreeSurface(face->mtl.tex.texture);
+    glDeleteTextures(1, &face->mtl.tex.texID);
 
     // Delete the index buffer object
     glDeleteBuffers(1, &face->ibo);

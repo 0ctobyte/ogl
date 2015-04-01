@@ -4,8 +4,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <SDL2/SDL.h>
+
 #include "vec.h"
 #include "array.h"
+
+typedef struct {
+  // Handle to the texture unit
+  uint32_t texID;
+
+  // The actual texture data
+  SDL_Surface *texture;
+
+  // The texture pixel mode
+  uint32_t format;
+} texture_t;
 
 typedef struct {
   vec3_t diffuse;
@@ -15,6 +28,9 @@ typedef struct {
   // This is essentially the specular exponent
   float shininess;
   float transparency;
+
+  // The texture data if needed
+  texture_t tex;
 } material_t;
 
 // A group of faces using the same material

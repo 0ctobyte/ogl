@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include <SDL2/SDL.h>
 #include <OpenGL/gl3.h>
@@ -169,6 +170,12 @@ void shader_set_uniform(uint32_t s_id, const char *uniform_name, shader_uniform_
     {
       int32_t uniform_loc = glGetUniformLocation(s_id, uniform_name);
       if(uniform_loc >= 0) glUniform1f(uniform_loc, *((float*)data));
+      break;
+    }
+  case SHADER_UNIFORM_UINT:
+    {
+      int32_t uniform_loc = glGetUniformLocation(s_id, uniform_name);
+      if(uniform_loc >= 0) glUniform1ui(uniform_loc, *((bool*)data));
       break;
     }
 

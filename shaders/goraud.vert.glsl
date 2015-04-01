@@ -16,6 +16,7 @@ struct Material {
   vec3 specular;
   float shininess;
   float transparency;
+  bool use_texture;
 };
 
 struct Camera {
@@ -26,10 +27,12 @@ uniform mat4 modelviewprojection;
 uniform mat4 modelview;
 uniform mat4 normalmodelview;
 uniform LightSource light = LightSource(vec3(0.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 0.005, 0.04);
-uniform Material mtl = Material(vec3(0.75, 0.75, 0.75), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 80.0, 1.0);
+uniform Material mtl = Material(vec3(0.75, 0.75, 0.75), vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0), 80.0, 1.0, false);
 uniform Camera cam = Camera(vec3(0.0, 0.0, 0.0));
+uniform sampler2D tex;
 
 in vec3 in_Position;
+in vec3 in_TexCoord;
 in vec3 in_Normal; 
 
 // The per-vertex color is interpolated over the pixels
@@ -43,6 +46,9 @@ void main()
   // Calculate position of this vertex in world space
   vec3 vert_pos = vec3(modelview * vec4(in_Position, 1));
 
+  // Determine whether use texture or diffuse material color
+  vec4 surface_color = (mtl.use_texture) ? texture(tex, vec2(in_TexCoord)) : vec4(mtl.diffuse, 1.0);
+
   // Calculate vector from this vertex to light source
   vec3 vert_to_light = light.position - vert_pos;
   
@@ -50,7 +56,7 @@ void main()
   float brightness = max(0.0, dot(normal, normalize(vert_to_light)));
 
   // Calculate the diffuse component
-  vec3 diffuse = brightness * mtl.diffuse * light.intensities;
+  vec3 diffuse = brightness * surface_color.rgb * light.intensities;
 
   // Calculate the angle of reflectance.
   // The surf_to_light needs to go in the opposite direction in order to represent the angle of incidence
