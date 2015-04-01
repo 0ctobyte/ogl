@@ -278,7 +278,10 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   size_t num_attribs = 3*array_size(positions);
   mesh->vertices = array_create(num_attribs, sizeof(vec3_t));
   vec3_t z = {0.0f, 0.0f, 0.0f};
-  for(uint32_t i = 0; i < num_attribs; ++i) {
+  for(uint32_t i = 0; i < num_attribs; i+=3) {
+    vec3_t u = {0.0f, 0.0f, -1.0f};
+    array_append(mesh->vertices, &z);
+    array_append(mesh->vertices, &u);
     array_append(mesh->vertices, &z);
   }
 
@@ -301,7 +304,6 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
           // First parse the vertex position index
           char *next;
           uint32_t index = (uint32_t)strtoul(pch, &next, 10)-1;
-          array_append(face->indices, &index);
           
           // Now append the vertex position at that index into the interleaved vertex attribute array
           vec3_t *v = array_at(positions, index);
@@ -311,10 +313,24 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
             // Attempt to parse the texture index, check to make sure a texture index exists
             uint32_t t_index = (uint32_t)strtoul(next+1, &next, 10);
             if(t_index != 0) {
-              // Now append the vertex texture coordinate into the interleaved vertex attribute array
               t_index--;
               v = array_at(uv, t_index);
-              array_set(mesh->vertices, index*3+1, v);
+
+              // Check if the vertex needs to be duplicated, if the texture coordinates are different for the same vertex
+              vec3_t *u = array_at(mesh->vertices, index*3+1);
+
+              if(!(u->z < 0.0) && (u->x != v->x || u->y != v->y)) {
+                // Duplicate the vertex and update the index
+                vec3_t *p = array_at(mesh->vertices, index*3);
+                vec3_t *n = array_at(mesh->vertices, index*3+2);
+                array_append(mesh->vertices, p);
+                index = ((uint32_t)array_size(mesh->vertices)-1)/3;
+                array_append(mesh->vertices, v);
+                array_append(mesh->vertices, n);
+              } else {
+                // Now append the vertex texture coordinate into the interleaved vertex attribute array
+                array_set(mesh->vertices, index*3+1, v);
+              }
             } 
 
             // Attempt to parse the normal index, check to make sure a normal index exists
@@ -327,6 +343,8 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
             }
           }
 
+          // Append the index into the index array
+          array_append(face->indices, &index);
           pch = strtok(NULL, " ");
         }
       }
