@@ -319,7 +319,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
               // Check if the vertex needs to be duplicated, if the texture coordinates are different for the same vertex
               vec3_t *u = array_at(mesh->vertices, index*3+1);
 
-              if(!(u->z < 0.0) && (u->x != v->x || u->y != v->y)) {
+              if((u->z == 0.0) && (u->x != v->x || u->y != v->y)) {
                 // Duplicate the vertex and update the index
                 vec3_t *p = array_at(mesh->vertices, index*3);
                 vec3_t *n = array_at(mesh->vertices, index*3+2);
