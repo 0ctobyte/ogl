@@ -139,7 +139,7 @@ static uint32_t s_id;
 static mesh_t mesh;
 static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
-static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, 0.005f, 0.04f};
+static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f/2.2f, 1.0f/2.2f, 1.0f/2.2f}, 0.005f, 0.04f};
 
 void init() {
   // Set up a perspective projection matrix
