@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_log.h>
 #include <OpenGL/gl3.h>
 
@@ -69,27 +69,17 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   face_group_t *faces = (face_group_t*)array_at(mesh->faces, (uint32_t)array_size(mesh->faces)-1);
 
   // Load the BMP
-  faces->mtl.tex.texture = SDL_LoadBMP(tex_filename);
+  SDL_Surface *surface = SDL_LoadBMP(tex_filename);
 
   // Make sure the file exists and was loaded properly
-  if(faces->mtl.tex.texture == NULL) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading tex file\n");
+  if(surface == NULL) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading texture file\n");
     return;
   }
 
-  // Get the OpenGL format
-  uint32_t internal_format = 0;
-  if(faces->mtl.tex.texture->format->BytesPerPixel == 3) {
-    faces->mtl.tex.format = (faces->mtl.tex.texture->format->Rmask == 0x000000ff) ? GL_RGB : GL_BGR;
-    internal_format = GL_RGB;
-  } else if(faces->mtl.tex.texture->format->BytesPerPixel == 4) {
-    faces->mtl.tex.format = (faces->mtl.tex.texture->format->Rmask == 0x000000ff) ? GL_RGBA : GL_BGRA;
-    internal_format = GL_RGBA;
-  } else {
-    SDL_FreeSurface(faces->mtl.tex.texture);
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Unsupported pixel format for texture: %s\n", tex_filename);
-    return;
-  }
+  // Convert the surface to RGBA
+  faces->mtl.tex.texture = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+  if(surface != NULL) SDL_FreeSurface(surface);
   
   glBindVertexArray(mesh->vao);
 
@@ -100,9 +90,11 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   // Set the texture parameters
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   // Upload the texture pixel data
-  glTexImage2D(GL_TEXTURE_2D, 0, (GLint)internal_format, (GLsizei)faces->mtl.tex.texture->w, (GLsizei)faces->mtl.tex.texture->h, 0, faces->mtl.tex.format, GL_UNSIGNED_BYTE, faces->mtl.tex.texture->pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)faces->mtl.tex.texture->w, (GLsizei)faces->mtl.tex.texture->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, faces->mtl.tex.texture->pixels);
 
   // Unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -238,6 +230,8 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
             *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
             pch = strtok(NULL, " ");
           }
+          // Blender's UV coordinate system is vertically flipped compared to OpenGL's
+          v.y = 1-v.y;
           array_append(uv, &v);
           break;
         }

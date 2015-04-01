@@ -15,9 +15,6 @@ typedef struct {
 
   // The actual texture data
   SDL_Surface *texture;
-
-  // The texture pixel mode
-  uint32_t format;
 } texture_t;
 
 typedef struct {
