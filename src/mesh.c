@@ -331,10 +331,24 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
             // Attempt to parse the normal index, check to make sure a normal index exists
             uint32_t n_index = (uint32_t)strtoul(next+1, NULL, 10);
             if(n_index != 0) {
-              // Now append the vertex normal attribute into the interleaved vertex attribute array
               n_index--;
               v = array_at(normals, n_index);
-              array_set(mesh->vertices, index*3+2, v);
+
+              // Check if the vertex needs to be duplicated, if the normals are different for the same vertex
+              vec3_t *u = array_at(mesh->vertices, index*3+2);
+
+              if((u->z != 0 || u->y != 0 || u->x != 0) && (u->x != v->x || u->y != v->y || u->z != v->z)) {
+                // Duplicate the vertex and update the index
+                vec3_t *p = array_at(mesh->vertices, index*3);
+                vec3_t *t = array_at(mesh->vertices, index*3+1);
+                array_append(mesh->vertices, p);
+                index = ((uint32_t)array_size(mesh->vertices)-1)/3;
+                array_append(mesh->vertices, t);
+                array_append(mesh->vertices, v);
+              } else {
+                // Now append the vertex normal attribute into the interleaved vertex attribute array
+                array_set(mesh->vertices, index*3+2, v);
+              }
             }
           }
 
