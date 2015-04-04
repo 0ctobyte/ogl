@@ -9,7 +9,7 @@ OBJS += $(patsubst %.c,%.o,$(C_SRCS))
 INCLUDE := -Iinclude
 
 BASEFLAGS := -g
-WARNFLAGS := -Weverything -Werror -Wno-float-equal -Wno-unused-parameter -Wno-missing-prototypes -Wno-unused-macros -Wno-padded
+WARNFLAGS := -Weverything -Werror -Wno-float-equal -Wno-unused-parameter -Wno-missing-prototypes -Wno-unused-macros -Wno-padded -Wno-switch-enum
 CFLAGS := -std=c99 $(DEFINES) $(BASEFLAGS) $(WARNFLAGS) $(INCLUDE)
 LDFLAGS := -demangle -dynamic -arch x86_64 -macosx_version_min 10.10.0  
 

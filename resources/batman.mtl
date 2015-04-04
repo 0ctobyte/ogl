@@ -1,0 +1,126 @@
+# Blender MTL File: 'None'
+# Material Count: 11
+
+newmtl BatmanEye_Mat.002
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd batman/BatmanEye_D.bmp
+map_Bump batman/BatmanEye_N_2.bmp
+map_Ka batman/BatmanEye_D.bmp
+
+newmtl BatmanEye_Mat.003
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd batman/BatmanEye_D.bmp
+map_Bump batman/BatmanEye_N_2.bmp
+map_Ka batman/BatmanEye_D.bmp
+
+newmtl Batman_Armoured_Body_Mat.001
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 1.000000 1.000000 1.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd batman/BatmanArmoured_Body_D.bmp
+map_Bump batman/BatmanArmoured_Body_N.bmp
+map_Ka batman/BatmanArmoured_Body_D.bmp
+
+newmtl Batman_Armoured_Head_Mat.001
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 1.000000 1.000000 1.000000
+Ni 1.000000
+d 1.000000
+illum 2
+#map_Kd batman/BatmanArmoured_Head_D.bmp
+map_Bump batman/BatmanArmoured_Head_N.bmp
+map_Ka batman/BatmanArmoured_Head_D.bmp
+
+newmtl V2_BatmanBody_Mat_INST.001
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 1.000000 1.000000 1.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd batman/V2_Batman_Body_D.bmp
+map_Bump batman/V2_Batman_Body_N.bmp
+map_Ka batman/V2_Batman_Body_D.bmp
+
+newmtl V2_Batman_Cape_Mat_INST_1
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 1.000000 1.000000 1.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd batman/V2_Batman_Cape_D2.bmp
+map_Bump batman/V2_Batman_Cape_N2.bmp
+map_Ka batman/V2_Batman_Cape_D2.bmp
+map_d batman/V2_Batman_Cape_A2.bmp
+
+newmtl V2_Batman_Head_Mat.001
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 1.000000 1.000000 1.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd batman/V2_Batman_Head_D.bmp
+map_Bump batman/V2_Batman_Head_N.bmp
+map_Ka batman/V2_Batman_Head_D.bmp
+
+newmtl V2_Batman_Head_Mat_INST.001
+Ns 7.843137
+Ka 0.000000 0.000000 0.000000
+Kd 0.470400 0.470400 0.470400
+Ks 1.000000 1.000000 1.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd batman/V2_Batman_Head_D.bmp
+map_Bump batman/V2_Batman_Head_N.bmp
+map_Ka batman/V2_Batman_Head_D.bmp
+
+newmtl wire_174186203.002
+Ns 29.411765
+Ka 0.000000 0.000000 0.000000
+Kd 0.545882 0.583530 0.636863
+Ks 0.350000 0.350000 0.350000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl wire_174186203.003
+Ns 29.411765
+Ka 0.000000 0.000000 0.000000
+Kd 0.545882 0.583530 0.636863
+Ks 0.350000 0.350000 0.350000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl wire_174186203.004
+Ns 29.411765
+Ka 0.000000 0.000000 0.000000
+Kd 0.545882 0.583530 0.636863
+Ks 0.350000 0.350000 0.350000
+Ni 1.000000
+d 1.000000
+illum 2

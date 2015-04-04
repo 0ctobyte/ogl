@@ -8,6 +8,7 @@
 #include "shader.h"
 #include "mesh.h"
 #include "array.h"
+#include "obj.h"
 
 void check_gl_errors();
 void init();
@@ -101,6 +102,10 @@ int main(int argc, char **argv) {
     snprintf(fragment_shader, 256, "shaders/%s.frag.glsl", argv[2]);
   }
 
+  obj_parsed_data_t d;
+  obj_parse(&d, obj_model);
+  obj_parser_free_parsed_data(&d);
+
   init();
 
   // Main loop
@@ -139,7 +144,7 @@ static uint32_t s_id;
 static mesh_t mesh;
 static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
-static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f/2.2f, 1.0f/2.2f, 1.0f/2.2f}, 0.005f, 0.04f};
+static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f/2.2f, 1.0f/2.2f, 1.0f/2.2f}, 0.0005f, 0.04f};
 
 void init() {
   // Set up a perspective projection matrix
@@ -290,7 +295,7 @@ void draw() {
   shader_set_uniform(s_id, "light.gamma", SHADER_UNIFORM_VEC3, &light.gamma); 
   shader_set_uniform(s_id, "light.attenuation", SHADER_UNIFORM_FLOAT, &light.attenuation); 
   shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &light.ambient_coefficient); 
-  shader_set_uniform(s_id, "came.position", SHADER_UNIFORM_VEC3, &camera); 
+  //shader_set_uniform(s_id, "cam.position", SHADER_UNIFORM_VEC3, &camera); 
    
   size_t size = array_size(mesh.faces);
   for(uint32_t i = 0; i < size; i++) {
@@ -301,10 +306,7 @@ void draw() {
     shader_set_uniform(s_id, "mtl.specular", SHADER_UNIFORM_VEC3, &face->mtl.specular);
     shader_set_uniform(s_id, "mtl.shininess", SHADER_UNIFORM_FLOAT, &face->mtl.shininess);
     shader_set_uniform(s_id, "mtl.transparency", SHADER_UNIFORM_FLOAT, &face->mtl.transparency);
-    
-    uint32_t use_tex = (face->mtl.tex.texture == NULL) ? 0 : 1;
-    
-    shader_set_uniform(s_id, "mtl.use_texture", SHADER_UNIFORM_UINT, &use_tex);
+    shader_set_uniform(s_id, "mtl.use_texture", SHADER_UNIFORM_UINT, &face->mtl.tex.use_texture);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, face->mtl.tex.texID);

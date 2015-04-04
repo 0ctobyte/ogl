@@ -2,7 +2,6 @@
 #define __MESH_H__
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #include <SDL2/SDL.h>
 
@@ -15,6 +14,9 @@ typedef struct {
 
   // The actual texture data
   SDL_Surface *texture;
+
+  // True if texture is bound
+  int32_t use_texture;
 } texture_t;
 
 typedef struct {

@@ -9,7 +9,7 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd F16s.bmp
+map_Kd f16/F16s.bmp
 
 newmtl F16t
 Ns 9.803922
@@ -19,4 +19,4 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd F16t.bmp
+map_Kd f16/F16t.bmp

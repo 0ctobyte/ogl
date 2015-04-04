@@ -59,6 +59,7 @@ void _mesh_create_face_group(mesh_t *mesh) {
   face.mtl.transparency = 1.0f;
   face.mtl.tex.texID = 0;
   face.mtl.tex.texture = NULL;
+  face.mtl.tex.use_texture = false;
 
   // Add the face to the mesh
   array_append(mesh->faces, &face);
@@ -69,11 +70,12 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   face_group_t *faces = (face_group_t*)array_at(mesh->faces, (uint32_t)array_size(mesh->faces)-1);
 
   // Load the BMP
+  faces->mtl.tex.use_texture = 0;
   SDL_Surface *surface = SDL_LoadBMP(tex_filename);
 
   // Make sure the file exists and was loaded properly
   if(surface == NULL) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading texture file\n");
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading texture file: %s\n", tex_filename);
     return;
   }
 
@@ -99,6 +101,10 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   // Unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindVertexArray(0);
+
+  // Free the surface
+  faces->mtl.tex.use_texture = 1;
+  SDL_FreeSurface(faces->mtl.tex.texture);
 }
 
 void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {

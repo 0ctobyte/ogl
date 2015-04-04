@@ -30,6 +30,10 @@ void _array_resize(array_t *a, size_t capacity) {
   // Allocate a new array
   a->capacity = capacity;
   a->data = (void*)realloc(a->data, a->elem_size*a->capacity);
+  assert(a->data != NULL);
+
+  // Clear the new memory
+  memset((char*)a->data+(a->elem_size*a->size), 0, (a->capacity-a->size)*a->elem_size);
 }
 
 array_t* array_create(size_t capacity, size_t elem_size) {
@@ -45,6 +49,9 @@ array_t* array_create(size_t capacity, size_t elem_size) {
   // Make space for the data (capacity*elem_size)
   a->data = (void*)malloc(a->elem_size*a->capacity);
   assert(a->data != NULL);
+
+  // Clear the data
+  memset((char*)a->data, 0, a->capacity*a->elem_size);
 
   return a;
 }
@@ -67,13 +74,19 @@ void* array_at(array_t *a, uint32_t index) {
   return (void*)((char*)a->data+(a->elem_size*index));
 }
 
+void* array_back(array_t *a) {
+  assert(a->size > 0);
+
+  return (void*)((char*)a->data+(a->elem_size*(a->size-1)));
+}
+
 void array_set(array_t *a, uint32_t index, void *datum) {
   assert(a != NULL && index < a->size);
 
   memcpy((char*)a->data+(a->elem_size*index), datum, a->elem_size);
 }
 
-void* array_data(array_t *a) {
+const void* array_data(array_t *a) {
   assert(a != NULL);
   return a->data;
 }
@@ -81,6 +94,23 @@ void* array_data(array_t *a) {
 size_t array_size(array_t *a) {
   assert(a != NULL);
   return a->size;
+}
+
+void array_copy(array_t *dst, array_t *src) {
+  assert(dst->elem_size == src->elem_size);
+
+  // Reset the dst array
+  array_delete(dst);
+  dst = array_create(src->size, src->elem_size);
+
+  // Copy the data
+  memcpy((char*)dst->data, (char*)src->data, src->size*src->elem_size);
+  dst->size = src->size;
+}
+
+void array_clear(array_t *a) {
+  memset(a->data, 0, a->size*a->elem_size);
+  a->size = 0;
 }
 
 void array_delete(array_t *a) {

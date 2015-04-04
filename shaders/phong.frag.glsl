@@ -44,7 +44,11 @@ void main()
 
   // Determine whether use texture or diffuse material color
   vec4 surface_color = vec4(mtl.diffuse, 1.0);
-  if(mtl.use_texture) surface_color = surface_color * texture(tex, vec2(o_TexCoord));
+  if(mtl.use_texture) {
+    vec4 tex_color = texture(tex, vec2(o_TexCoord));
+    surface_color.rgb = (-surface_color.rgb - (1-tex_color.a)) * mtl.diffuse + tex_color.a * tex_color.rgb;
+    //surface_color.rgb = tex_color.rgb * surface_color.rgb;
+  }
 
   // Calculate the cosine of the angle of incidence (brightness)
   // (no need to divide the dot product by the product of the lengths of the vectors since they have been normalized)
@@ -77,7 +81,8 @@ void main()
   // 3. The specular component
   // 4. The distance from the light source (attenuation)
   // 5. Gamma correction (if needed)
-  vec3 linear_color = max(ambient, attenuation * (diffuse + specular));
-  f_Color = vec4(pow(linear_color, light.gamma), mtl.transparency);
+  vec3 linear_color = (ambient + attenuation * (diffuse + specular));
+  //f_Color = vec4(pow(linear_color, light.gamma), mtl.transparency);
+  f_Color = vec4(linear_color, mtl.transparency);
 }
 
