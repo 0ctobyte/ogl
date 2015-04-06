@@ -291,25 +291,25 @@ void draw() {
   shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &light.ambient_coefficient); 
   //shader_set_uniform(s_id, "cam.position", SHADER_UNIFORM_VEC3, &camera); 
    
-  size_t size = array_size(mesh.faces);
+  size_t size = array_size(mesh.mtl_grps);
   for(uint32_t i = 0; i < size; i++) {
-    face_group_t *face = (face_group_t*)array_at(mesh.faces, i);
+    material_group_t *grp = (material_group_t*)array_at(mesh.mtl_grps, i);
 
-    shader_set_uniform(s_id, "mtl.diffuse", SHADER_UNIFORM_VEC3, &face->mtl.diffuse);
-    shader_set_uniform(s_id, "mtl.ambient", SHADER_UNIFORM_VEC3, &face->mtl.ambient);
-    shader_set_uniform(s_id, "mtl.specular", SHADER_UNIFORM_VEC3, &face->mtl.specular);
-    shader_set_uniform(s_id, "mtl.shininess", SHADER_UNIFORM_FLOAT, &face->mtl.shininess);
-    shader_set_uniform(s_id, "mtl.transparency", SHADER_UNIFORM_FLOAT, &face->mtl.transparency);
-    shader_set_uniform(s_id, "mtl.use_texture", SHADER_UNIFORM_UINT, &face->mtl.tex.use_texture);
+    shader_set_uniform(s_id, "mtl.diffuse", SHADER_UNIFORM_VEC3, &grp->mtl.diffuse);
+    shader_set_uniform(s_id, "mtl.ambient", SHADER_UNIFORM_VEC3, &grp->mtl.ambient);
+    shader_set_uniform(s_id, "mtl.specular", SHADER_UNIFORM_VEC3, &grp->mtl.specular);
+    shader_set_uniform(s_id, "mtl.shininess", SHADER_UNIFORM_FLOAT, &grp->mtl.shininess);
+    shader_set_uniform(s_id, "mtl.transparency", SHADER_UNIFORM_FLOAT, &grp->mtl.transparency);
+    shader_set_uniform(s_id, "mtl.use_texture", SHADER_UNIFORM_UINT, &grp->mtl.tex.use_texture);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, face->mtl.tex.texID);
+    glBindTexture(GL_TEXTURE_2D, grp->mtl.tex.texID);
 
     uint32_t texture_unit = 0;
     shader_set_uniform(s_id, "tex", SHADER_UNIFORM_INT, &texture_unit);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->ibo);
-    glDrawElements(GL_TRIANGLES, (GLsizei)array_size(face->indices), GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, grp->ibo);
+    glDrawElements(GL_TRIANGLES, (GLsizei)array_size(grp->indices), GL_UNSIGNED_INT, 0);
   }
 
   shader_unbind();

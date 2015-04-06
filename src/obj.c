@@ -9,34 +9,6 @@
 
 #include "obj.h"
 
-typedef enum {
-  UNKNOWN,
-  VTAG,
-  VNTAG,
-  VTTAG,
-  FTAG,
-  MTLLIBTAG,
-  USEMTLTAG,
-  IDENTIFIER,
-  FLOAT,
-  UINT,
-  SEPARATOR,
-  ERROR,
-  ENDOFFILE
-} token_type_t;
-
-typedef struct {
-  array_t *lexeme;
-  token_type_t type;
-} token_t;
-
-typedef struct {
-  char *fstring;
-  size_t fsize;
-  size_t c_index;
-  token_t token;
-} obj_parser_t;
-
 /*static char *type_strings[16] = {
   "UNKNOWN", 
   "VTAG",
@@ -76,7 +48,7 @@ uint32_t obj_lexer_get_token(obj_parser_t *p) {
 
   // Read characters until the next whitespace or separator 
   while(!isspace(p->fstring[p->c_index]) && p->fstring[p->c_index] != '/') {
-    char c = (char)tolower(p->fstring[p->c_index++]);
+    char c = p->fstring[p->c_index++];
     array_append(p->token.lexeme, &c);
   }
   size_t tok_len = array_size(p->token.lexeme);
@@ -167,25 +139,6 @@ void obj_parser_expect(obj_parser_t *p, token_type_t expected) {
   assert(p->token.type == expected);
 }
 
-bool obj_parser_found_one_from_many(obj_parser_t *p, token_type_t *types, size_t num_types) {
-  // Check if the next token is one of any of the given types
-  obj_lexer_get_token(p);
-  bool found = false;
-
-  // See if the token type of the current lexeme matches one
-  for(uint32_t i = 0;i < num_types; i++) {
-    if(p->token.type == types[i]) {
-      found = true;
-      break;
-    }
-  }
-
-  // Rewind character stream if false
-  if(!found) p->c_index -= array_size(p->token.lexeme);
-
-  return found;
-}
-
 bool obj_parser_found(obj_parser_t *p, token_type_t type) {
   // Check if the next token is of the given type
   obj_lexer_get_token(p);
@@ -197,7 +150,7 @@ bool obj_parser_found(obj_parser_t *p, token_type_t type) {
 }
 
 
-void obj_parser_vtag(obj_parser_t *p, obj_parsed_data_t *d) {
+void obj_parser_vtag(obj_parser_t *p, array_t *a) {
   // v = 'v', whitespace, float, whitespace, float, whitespace, float
   // A vtag is followed by 3 floats
   float coords[3];
@@ -207,10 +160,10 @@ void obj_parser_vtag(obj_parser_t *p, obj_parsed_data_t *d) {
     coords[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
-  array_append(d->v_positions, &coords);
+  array_append(a, &coords);
 }
 
-void obj_parser_vttag(obj_parser_t *p, obj_parsed_data_t *d) {
+void obj_parser_vttag(obj_parser_t *p, array_t *a) {
   // vt = "vt", whitespace, float, whitespace, float, [whitespace, float]
   float coords[3];
 
@@ -226,10 +179,10 @@ void obj_parser_vttag(obj_parser_t *p, obj_parsed_data_t *d) {
     coords[2] = 0.0f;
   }
 
-  array_append(d->v_texcoords, &coords);
+  array_append(a, &coords);
 }
 
-void obj_parser_vntag(obj_parser_t *p, obj_parsed_data_t *d) {
+void obj_parser_vntag(obj_parser_t *p, array_t *a) {
   // vn = "vn", whitespace, float, whitespace, float, whitespace, float
   float coords[3];
 
@@ -238,29 +191,20 @@ void obj_parser_vntag(obj_parser_t *p, obj_parsed_data_t *d) {
     coords[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
-  array_append(d->v_normals, &coords);
+  array_append(a, &coords);
 }
 
-void obj_parser_ftag(obj_parser_t *p, obj_parsed_data_t *d) {
+void obj_parser_ftag(obj_parser_t *p, array_t *i_positions, array_t *i_texcoords, array_t *i_normals) {
   // f = 'f', whitespace, ((uint, whitespace, uint, whitespace, uint
   // | uint, separator, uint, whitespace, uint, separator, uint, whitespace, uint, separator, uint
   // | uint, separator, uint, separator, uint, whitespace, uint, separator, uint, separator, uint, whitespace, uint, separator, uint, separator, uint
   // | uint, separator, separator, uint, whitespace, uint, separator, separator, uint, whitespace, uint, separator, separator, uint)
   
-  // If there are no existing material groups, create one
-  if(array_size(d->mtl_groups) == 0) {
-    obj_material_group_t mtl_grp = {array_create(2, sizeof(char)), array_create(2, sizeof(uint32_t)), array_create(2, sizeof(uint32_t)), array_create(2, sizeof(uint32_t))};
-    array_append(d->mtl_groups, &mtl_grp);
-  }
-
-  // Get the latest mtl group
-  obj_material_group_t *mtl_group = array_back(d->mtl_groups);
-
   // 3 sets of indices for each vertex
   for(uint32_t i = 0; i < 3; ++i) {
     obj_parser_expect(p, UINT);
     uint32_t index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
-    array_append(mtl_group->i_positions, &index);
+    array_append(i_positions, &index);
 
     if(obj_parser_found(p, SEPARATOR)) {
       // Double separator means only normal index specified
@@ -268,82 +212,45 @@ void obj_parser_ftag(obj_parser_t *p, obj_parsed_data_t *d) {
         obj_parser_expect(p, UINT);
 
         index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
-        array_append(mtl_group->i_normals, &index);
+        array_append(i_normals, &index);
       } else {
         // One separator indicates a texcoord 
         obj_parser_expect(p, UINT);
 
         index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
-        array_append(mtl_group->i_texcoords, &index);
+        array_append(i_texcoords, &index);
 
         // If another separator is found then a normal is also specified
         if(obj_parser_found(p, SEPARATOR)) {
           obj_parser_expect(p, UINT);
 
           index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
-          array_append(mtl_group->i_normals, &index);
+          array_append(i_normals, &index);
         }
       }
     }
   }
 }
 
-void obj_parser_mtllibtag(obj_parser_t *p, obj_parsed_data_t *d) {
+void obj_parser_mtllibtag(obj_parser_t *p, array_t *a) {
   // mtllib = "mtllib", whitespace, identifier
   // Expect an identifier that indentifies the filename of the mtllib
   obj_parser_expect(p, IDENTIFIER);
 
   // Copy the mtllib filename
-  array_copy(d->mtl_filename, p->token.lexeme);
+  array_copy(a, p->token.lexeme);
 }
 
-void obj_parser_usemtltag(obj_parser_t *p, obj_parsed_data_t *d) {
+void obj_parser_usemtltag(obj_parser_t *p, array_t *a) {
   // usemtl = "usemtl", whitespace, identifier
   // Expect an identifier that indicates the material to use in the mtllib
   obj_parser_expect(p, IDENTIFIER);
 
-  // Create a new material group
-  obj_material_group_t mtl_grp = {array_create(2, sizeof(char)), array_create(2, sizeof(uint32_t)), array_create(2, sizeof(uint32_t)), array_create(2, sizeof(uint32_t))};
-
   // Copy the material name
-  array_copy(mtl_grp.mtl_name, p->token.lexeme);
-  
-  // Append the mtl group to the list of mtl groups
-  array_append(d->mtl_groups, &mtl_grp);
+  array_copy(a, p->token.lexeme);
 }
 
-void obj_parser_tag(obj_parser_t *p, obj_parsed_data_t *d) {
-  // tag = v | vn | vt | f | usemtl | mtllib
-  switch(p->token.type) {
-  case VTAG:
-    obj_parser_vtag(p, d);
-    break;
-  case VTTAG:
-    obj_parser_vttag(p, d);
-    break;
-  case VNTAG:
-    obj_parser_vntag(p, d);
-    break;
-  case FTAG:
-    obj_parser_ftag(p, d);
-    break;
-  case MTLLIBTAG:
-    obj_parser_mtllibtag(p, d);
-    break;
-  case USEMTLTAG:
-    obj_parser_usemtltag(p, d);
-    break;
-  default:
-    break;
-  }
-}
-
-void obj_parser_free_parser(obj_parser_t *p) {
-  if(p->fstring != NULL) free(p->fstring);
-  array_delete(p->token.lexeme);
-}
-
-void obj_parse(obj_parsed_data_t *d, const char *filename) {
+int32_t obj_parser_init(obj_parser_t *p, const char *filename) {
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "parsing: %s\n", filename);
 
   FILE *f = fopen(filename, "rb");
@@ -351,7 +258,7 @@ void obj_parse(obj_parsed_data_t *d, const char *filename) {
   // If file doesn't exist
   if(f == NULL) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to open file: %s\n", filename);
-    return;
+    return 1;
   }
 
   // Determine the size of the file
@@ -370,62 +277,13 @@ void obj_parse(obj_parsed_data_t *d, const char *filename) {
   fstring[fsize] = 0;
 
   // Initialize the parser object
-  obj_parser_t p = {fstring, fsize, 0, {array_create(2, sizeof(char)), UNKNOWN}};
-  
-  // Initialize the parsed data object
-  *d = (obj_parsed_data_t){array_create(2, sizeof(char)), array_create(2, 3*sizeof(float)), array_create(2, 3*sizeof(float)), array_create(2, 3*sizeof(float)), array_create(2, sizeof(obj_material_group_t))};
+  *p = (obj_parser_t){fstring, fsize, 0, {array_create(2, sizeof(char)), UNKNOWN}};
 
-  // Start parsing the data
-  token_type_t types[] = {VTAG, VNTAG, VTTAG, FTAG, MTLLIBTAG, USEMTLTAG, UNKNOWN};
-  while(p.token.type != ERROR && p.token.type != ENDOFFILE) {
-    // A valid tag must be found on each line
-    if(!obj_parser_found_one_from_many(&p, types, sizeof(types)/sizeof(types[0]))) {
-      if(p.token.type == ENDOFFILE) continue; 
-      SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unexpected token: %s\n", array_data(p.token.lexeme));
-
-      // Skip this token and continue
-      obj_lexer_get_token(&p);
-      continue;
-    }
-
-    // What if we get an unknown token
-    if(p.token.type == UNKNOWN) {
-      SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Unknown token: %s\n", array_data(p.token.lexeme));
-
-      // Skip this token and continue
-      obj_lexer_get_token(&p);
-      continue; 
-    }
-
-    // Parse the tag
-    obj_parser_tag(&p, d);
-  }
-
-  // Free the parser object
-  obj_parser_free_parser(&p);
+  return 0;
 }
 
-void obj_parser_free_parsed_data(obj_parsed_data_t *data) {
-  // Delete all the arrays
-  array_delete(data->mtl_filename);
-  array_delete(data->v_positions);
-  array_delete(data->v_texcoords);
-  array_delete(data->v_normals);
-
-  // Delete all the index arrays from the material groups
-  if(data->mtl_groups != NULL) {
-    size_t size = array_size(data->mtl_groups);
-    obj_material_group_t *mtlgroups =  (obj_material_group_t*)array_data(data->mtl_groups);
-    for(uint32_t i = 0; i < size; i++) {
-      obj_material_group_t mgrp = mtlgroups[i];
-      array_delete(mgrp.mtl_name);
-      array_delete(mgrp.i_positions);
-      array_delete(mgrp.i_texcoords);
-      array_delete(mgrp.i_normals);
-    }
-
-    // Delete the material group array
-    array_delete(data->mtl_groups);
-  }
+void obj_parser_free(obj_parser_t *p) {
+  if(p->fstring != NULL) free(p->fstring);
+  array_delete(p->token.lexeme);
 }
 

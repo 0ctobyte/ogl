@@ -42,7 +42,7 @@ typedef struct {
 
   // List of indices in this face group
   array_t *indices;
-} face_group_t;
+} material_group_t;
 
 typedef struct {
   // Handle to the OpenGL vertex array object
@@ -52,10 +52,10 @@ typedef struct {
   uint32_t vbo;
   
   // List of vertex attributes (position, texture, normals)
-  array_t *vertices;
+  array_t *vattributes;
 
   // List of face groups
-  array_t *faces;
+  array_t *mtl_grps;
   size_t num_faces;
 } mesh_t;
 

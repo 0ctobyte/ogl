@@ -8,6 +8,7 @@
 
 #include "mesh.h"
 #include "vec.h"
+#include "obj.h"
 
 void _mesh_gen_buffers(mesh_t *mesh) {
   // Generate the name for the vertex array object (VAO)
@@ -19,7 +20,7 @@ void _mesh_gen_buffers(mesh_t *mesh) {
 
   // Copy the vertex data into the vertex buffer
   glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(array_size(mesh->vertices)*sizeof(vec3_t)), array_data(mesh->vertices), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(array_size(mesh->vattributes)*sizeof(vec3_t)), array_data(mesh->vattributes), GL_STATIC_DRAW);
 
   // Unbind everything
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -29,48 +30,48 @@ void _mesh_gen_buffers(mesh_t *mesh) {
 void _mesh_gen_index_buffers(mesh_t *mesh) {
   glBindVertexArray(mesh->vao);
 
-  // Generate index buffer for each face and copy data to the GPU
-  size_t size = array_size(mesh->faces);
+  // Generate index buffer for each material group and copy data to the GPU
+  size_t size = array_size(mesh->mtl_grps);
   for(uint32_t i = 0; i < size; i++) {
-    face_group_t *face = (face_group_t*)array_at(mesh->faces, i);
-    glGenBuffers(1, &face->ibo);
+    material_group_t *grp = (material_group_t*)array_at(mesh->mtl_grps, i);
+    glGenBuffers(1, &grp->ibo);
 
     // Copy the index data into the index buffer
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, face->ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(array_size(face->indices)*sizeof(uint32_t)), array_data(face->indices), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, grp->ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(array_size(grp->indices)*sizeof(uint32_t)), array_data(grp->indices), GL_STATIC_DRAW);
   }
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 }
 
-void _mesh_create_face_group(mesh_t *mesh) {
-  // Create a new face group
-  face_group_t face;
+void _mesh_create_material_group(mesh_t *mesh) {
+  // Create a new material group
+  material_group_t grp;
 
   // Create the index array
-  face.indices = array_create(2, sizeof(uint32_t));
+  grp.indices = array_create(2, sizeof(uint32_t));
 
   // Default values for the material in case none exist
-  face.mtl.diffuse = (vec3_t){0.75f, 0.75f, 0.75f};
-  face.mtl.ambient = (vec3_t){0.0f, 0.0f, 0.0f};
-  face.mtl.specular = (vec3_t){1.0f, 1.0f, 1.0f};
-  face.mtl.shininess = 80.0f;
-  face.mtl.transparency = 1.0f;
-  face.mtl.tex.texID = 0;
-  face.mtl.tex.texture = NULL;
-  face.mtl.tex.use_texture = false;
+  grp.mtl.diffuse = (vec3_t){0.75f, 0.75f, 0.75f};
+  grp.mtl.ambient = (vec3_t){0.0f, 0.0f, 0.0f};
+  grp.mtl.specular = (vec3_t){1.0f, 1.0f, 1.0f};
+  grp.mtl.shininess = 80.0f;
+  grp.mtl.transparency = 1.0f;
+  grp.mtl.tex.texID = 0;
+  grp.mtl.tex.texture = NULL;
+  grp.mtl.tex.use_texture = false;
 
-  // Add the face to the mesh
-  array_append(mesh->faces, &face);
+  // Add the material group to the mesh
+  array_append(mesh->mtl_grps, &grp);
 }
 
 void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
-  // Get the latest face group
-  face_group_t *faces = (face_group_t*)array_at(mesh->faces, (uint32_t)array_size(mesh->faces)-1);
+  // Get the latest material group
+  material_group_t *grps = (material_group_t*)array_at(mesh->mtl_grps, (uint32_t)array_size(mesh->mtl_grps)-1);
 
   // Load the BMP
-  faces->mtl.tex.use_texture = 0;
+  grps->mtl.tex.use_texture = 0;
   SDL_Surface *surface = SDL_LoadBMP(tex_filename);
 
   // Make sure the file exists and was loaded properly
@@ -80,14 +81,14 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   }
 
   // Convert the surface to RGBA
-  faces->mtl.tex.texture = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+  grps->mtl.tex.texture = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
   if(surface != NULL) SDL_FreeSurface(surface);
   
   glBindVertexArray(mesh->vao);
 
   // Generate the texture handle
-  glGenTextures(1, &faces->mtl.tex.texID);
-  glBindTexture(GL_TEXTURE_2D, faces->mtl.tex.texID);
+  glGenTextures(1, &grps->mtl.tex.texID);
+  glBindTexture(GL_TEXTURE_2D, grps->mtl.tex.texID);
 
   // Set the texture parameters
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -96,15 +97,15 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   // Upload the texture pixel data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)faces->mtl.tex.texture->w, (GLsizei)faces->mtl.tex.texture->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, faces->mtl.tex.texture->pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)grps->mtl.tex.texture->w, (GLsizei)grps->mtl.tex.texture->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, grps->mtl.tex.texture->pixels);
 
   // Unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindVertexArray(0);
 
   // Free the surface
-  faces->mtl.tex.use_texture = 1;
-  SDL_FreeSurface(faces->mtl.tex.texture);
+  grps->mtl.tex.use_texture = 1;
+  SDL_FreeSurface(grps->mtl.tex.texture);
 }
 
 void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
@@ -133,7 +134,7 @@ void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
   }
 
   // Start reading the material data
-  face_group_t *face = (face_group_t*)array_at(mesh->faces, (uint32_t)array_size(mesh->faces)-1);
+  material_group_t *grp = (material_group_t*)array_at(mesh->mtl_grps, (uint32_t)array_size(mesh->mtl_grps)-1);
   while(fgets(line, 256, mtl_file) != NULL) {
     char *pch = strtok(line, " ");
 
@@ -144,12 +145,12 @@ void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
       // The specular shininess
       pch = strtok(NULL, " ");
       if(pch == NULL) continue;
-      face->mtl.shininess = strtof(pch, NULL);
+      grp->mtl.shininess = strtof(pch, NULL);
     } else if(strcmp(pch, "d") == 0) {
       // The alpha transparency
       pch = strtok(NULL, " ");
       if(pch == NULL) continue;
-      face->mtl.transparency = strtof(pch, NULL);
+      grp->mtl.transparency = strtof(pch, NULL);
     } else if(strcmp(pch, "Ka") == 0) {
       // The material ambient color
       vec3_t v = {0.0f, 0.0f, 0.0f};
@@ -158,7 +159,7 @@ void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
         *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
         pch = strtok(NULL, " ");
       }
-      face->mtl.ambient = v;
+      grp->mtl.ambient = v;
     } else if(strcmp(pch, "Kd") == 0) {
       // The material diffuse color
       vec3_t v = {0.0f, 0.0f, 0.0f};
@@ -167,7 +168,7 @@ void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
         *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
         pch = strtok(NULL, " ");
       }
-      face->mtl.diffuse = v;
+      grp->mtl.diffuse = v;
     } else if(strcmp(pch, "Ks") == 0) {
       // The material specular color
       vec3_t v = {0.0f, 0.0f, 0.0f};
@@ -176,7 +177,7 @@ void _mesh_load_mtl(mesh_t *mesh, FILE *mtl_file, const char *mtl_name) {
         *(((GLfloat*)(&v))+i) = strtof(pch, NULL);
         pch = strtok(NULL, " ");
       }
-      face->mtl.specular = v;
+      grp->mtl.specular = v;
     } else if(strcmp(pch, "map_Kd") == 0) {
       pch = strtok(NULL, " ");
       if(pch == NULL) continue;
@@ -276,31 +277,31 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
 
   // Fill the vertex attribute array with 0 vectors
   size_t num_attribs = 3*array_size(positions);
-  mesh->vertices = array_create(num_attribs, sizeof(vec3_t));
+  mesh->vattributes = array_create(num_attribs, sizeof(vec3_t));
   vec3_t z = {0.0f, 0.0f, 0.0f};
   for(uint32_t i = 0; i < num_attribs; i+=3) {
     // This is used as a marker to indicate that a texture coordinate has not been set
     vec3_t u = {0.0f, 0.0f, -1.0f};
-    array_append(mesh->vertices, &z);
-    array_append(mesh->vertices, &u);
-    array_append(mesh->vertices, &z);
+    array_append(mesh->vattributes, &z);
+    array_append(mesh->vattributes, &u);
+    array_append(mesh->vattributes, &z);
   }
 
   // Parse the indices as they are read in and place the vertex attributes in the correct index in the vertex attribute array
-  mesh->faces = array_create(2, sizeof(face_group_t));
+  mesh->mtl_grps = array_create(2, sizeof(material_group_t));
   while(fgets(line, 256, f) != NULL) {
     switch(line[0]) {
     case 'f':
       {
         mesh->num_faces++;
-        // Create a face if none exist
+        // Create a material group if none exist
         // We might have obj files with only one group of faces and no materials 
-        if(array_size(mesh->faces) == 0) _mesh_create_face_group(mesh);
+        if(array_size(mesh->mtl_grps) == 0) _mesh_create_material_group(mesh);
 
         char *pch = strtok(&line[1], " ");
         while(pch != NULL) {
-          // Add the indices to the last face in the list
-          face_group_t *face = (face_group_t*)array_at(mesh->faces, (uint32_t)array_size(mesh->faces)-1);
+          // Add the indices to the last material group in the list
+          material_group_t *grp = (material_group_t*)array_at(mesh->mtl_grps, (uint32_t)array_size(mesh->mtl_grps)-1);
 
           // Indices start from 1 in the Wavefront OBJ format
           // First parse the vertex position index
@@ -309,7 +310,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
           
           // Now append the vertex position at that index into the interleaved vertex attribute array
           vec3_t *v = array_at(positions, index);
-          array_set(mesh->vertices, index*3, v);
+          array_set(mesh->vattributes, index*3, v);
 
           if(next[0] == '/') {
             // Attempt to parse the texture index, check to make sure a texture index exists
@@ -319,19 +320,19 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
               v = array_at(uv, t_index);
 
               // Check if the vertex needs to be duplicated, if the texture coordinates are different for the same vertex
-              vec3_t *u = array_at(mesh->vertices, index*3+1);
+              vec3_t *u = array_at(mesh->vattributes, index*3+1);
 
               if((u->z == 0.0) && (u->x != v->x || u->y != v->y)) {
                 // Duplicate the vertex and update the index
-                vec3_t *p = array_at(mesh->vertices, index*3);
-                vec3_t *n = array_at(mesh->vertices, index*3+2);
-                array_append(mesh->vertices, p);
-                index = ((uint32_t)array_size(mesh->vertices)-1)/3;
-                array_append(mesh->vertices, v);
-                array_append(mesh->vertices, n);
+                vec3_t *p = array_at(mesh->vattributes, index*3);
+                vec3_t *n = array_at(mesh->vattributes, index*3+2);
+                array_append(mesh->vattributes, p);
+                index = ((uint32_t)array_size(mesh->vattributes)-1)/3;
+                array_append(mesh->vattributes, v);
+                array_append(mesh->vattributes, n);
               } else {
                 // Now append the vertex texture coordinate into the interleaved vertex attribute array
-                array_set(mesh->vertices, index*3+1, v);
+                array_set(mesh->vattributes, index*3+1, v);
               }
             } 
 
@@ -342,25 +343,25 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
               v = array_at(normals, n_index);
 
               // Check if the vertex needs to be duplicated, if the normals are different for the same vertex
-              vec3_t *u = array_at(mesh->vertices, index*3+2);
+              vec3_t *u = array_at(mesh->vattributes, index*3+2);
 
               if((u->z != 0 || u->y != 0 || u->x != 0) && (u->x != v->x || u->y != v->y || u->z != v->z)) {
                 // Duplicate the vertex and update the index
-                vec3_t *p = array_at(mesh->vertices, index*3);
-                vec3_t *t = array_at(mesh->vertices, index*3+1);
-                array_append(mesh->vertices, p);
-                index = ((uint32_t)array_size(mesh->vertices)-1)/3;
-                array_append(mesh->vertices, t);
-                array_append(mesh->vertices, v);
+                vec3_t *p = array_at(mesh->vattributes, index*3);
+                vec3_t *t = array_at(mesh->vattributes, index*3+1);
+                array_append(mesh->vattributes, p);
+                index = ((uint32_t)array_size(mesh->vattributes)-1)/3;
+                array_append(mesh->vattributes, t);
+                array_append(mesh->vattributes, v);
               } else {
                 // Now append the vertex normal attribute into the interleaved vertex attribute array
-                array_set(mesh->vertices, index*3+2, v);
+                array_set(mesh->vattributes, index*3+2, v);
               }
             }
           }
 
           // Append the index into the index array
-          array_append(face->indices, &index);
+          array_append(grp->indices, &index);
           pch = strtok(NULL, " ");
         }
       }
@@ -369,10 +370,10 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
         char *pch = strtok(line, " ");
         if(pch != NULL && strcmp(pch, "usemtl") != 0) continue;
        
-        // Start a new face group using this material
-        _mesh_create_face_group(mesh);
+        // Start a new material group using this material
+        _mesh_create_material_group(mesh);
         
-        // Load the material data for the face group
+        // Load the material data for the material group
         pch = strtok(NULL, " ");
         if(pch == NULL) continue;
         pch[strlen(pch)-1] = '\0';
@@ -402,7 +403,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   _mesh_gen_buffers(mesh);
   _mesh_gen_index_buffers(mesh);
 
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Mesh loaded with %lu vertex attributes and %lu faces\n", array_size(mesh->vertices), mesh->num_faces);
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Mesh loaded with %lu vertex attributes and %lu faces\n", array_size(mesh->vattributes), mesh->num_faces);
   return true;
 }
 
@@ -423,25 +424,25 @@ void mesh_delete(mesh_t *mesh) {
   glDeleteBuffers(1, &mesh->vbo);
 
   // Delete the vertex attribute array
-  array_delete(mesh->vertices);
+  array_delete(mesh->vattributes);
  
   // Delete all the index arrays
-  size_t size = array_size(mesh->faces);
+  size_t size = array_size(mesh->mtl_grps);
   for(uint32_t i = 0; i < size; i++) {
     // Delete the index array
-    face_group_t *face = (face_group_t*)array_at(mesh->faces, i);
-    array_delete(face->indices);
+    material_group_t *grp = (material_group_t*)array_at(mesh->mtl_grps, i);
+    array_delete(grp->indices);
 
     // Delete the texture if it exists
-    SDL_FreeSurface(face->mtl.tex.texture);
-    glDeleteTextures(1, &face->mtl.tex.texID);
+    SDL_FreeSurface(grp->mtl.tex.texture);
+    glDeleteTextures(1, &grp->mtl.tex.texID);
 
     // Delete the index buffer object
-    glDeleteBuffers(1, &face->ibo);
+    glDeleteBuffers(1, &grp->ibo);
   }
   
-  // Delete the faces array
-  array_delete(mesh->faces);
+  // Delete the material group array
+  array_delete(mesh->mtl_grps);
 
   // Finally delete the vertex array object
   glDeleteVertexArrays(1, &mesh->vao);
