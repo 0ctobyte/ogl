@@ -45,7 +45,7 @@ Ks 1.000000 1.000000 1.000000
 Ni 1.000000
 d 1.000000
 illum 2
-#map_Kd batman/BatmanArmoured_Head_D.bmp
+map_Kd batman/BatmanArmoured_Head_D.bmp
 map_Bump batman/BatmanArmoured_Head_N.bmp
 map_Ka batman/BatmanArmoured_Head_D.bmp
 
