@@ -269,7 +269,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
         // We might have obj files with only one group of faces and no materials 
         if(array_size(mesh->mtl_grps) == 0) _mesh_create_material_group(mesh);
 
-        // For each vertex attribute specified, add them to the material group's indices list duplicated the attribute if necessary
+        // For each vertex attribute specified, add them to the material group's indices list duplicating the attribute if necessary
         for(uint32_t i = 0; i < 3; ++i) {
           // Add the indices to the last material group in the list
           material_group_t *grp = (material_group_t*)array_back(mesh->mtl_grps);

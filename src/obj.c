@@ -26,7 +26,7 @@
 };*/
 
 uint32_t obj_lexer_get_token(obj_parser_t *p) {
-  token_type_t prev_type = p->token.type;
+  obj_token_type_t prev_type = p->token.type;
   p->token.type = UNKNOWN;
 
   // Skip comment lines
@@ -132,14 +132,14 @@ uint32_t obj_lexer_get_token(obj_parser_t *p) {
   return 0;
 }
 
-void obj_parser_expect(obj_parser_t *p, token_type_t expected) {
+void obj_parser_expect(obj_parser_t *p, obj_token_type_t expected) {
   // The next token must be of the specified type
   obj_lexer_get_token(p);
 
   assert(p->token.type == expected);
 }
 
-bool obj_parser_found(obj_parser_t *p, token_type_t type) {
+bool obj_parser_found(obj_parser_t *p, obj_token_type_t type) {
   // Check if the next token is of the given type
   obj_lexer_get_token(p);
 
@@ -148,7 +148,6 @@ bool obj_parser_found(obj_parser_t *p, token_type_t type) {
 
   return (p->token.type == type);
 }
-
 
 void obj_parser_vtag(obj_parser_t *p, array_t *a) {
   // v = 'v', whitespace, float, whitespace, float, whitespace, float
@@ -253,7 +252,7 @@ void obj_parser_usemtltag(obj_parser_t *p, array_t *a) {
 }
 
 int32_t obj_parser_init(obj_parser_t *p, const char *filename) {
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "parsing: %s\n", filename);
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Parsing: %s\n", filename);
 
   FILE *f = fopen(filename, "rb");
 

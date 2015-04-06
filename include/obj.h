@@ -17,18 +17,18 @@ typedef enum {
   SEPARATOR,
   ERROR,
   ENDOFFILE
-} token_type_t;
+} obj_token_type_t;
 
 typedef struct {
   array_t *lexeme;
-  token_type_t type;
-} token_t;
+  obj_token_type_t type;
+} obj_token_t;
 
 typedef struct {
   char *fstring;
   size_t fsize;
   size_t c_index;
-  token_t token;
+  obj_token_t token;
 } obj_parser_t;
 
 int32_t obj_parser_init(obj_parser_t *p, const char *filename);
