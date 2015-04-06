@@ -292,6 +292,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
     switch(line[0]) {
     case 'f':
       {
+        mesh->num_faces++;
         // Create a face if none exist
         // We might have obj files with only one group of faces and no materials 
         if(array_size(mesh->faces) == 0) _mesh_create_face_group(mesh);
@@ -401,6 +402,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   _mesh_gen_buffers(mesh);
   _mesh_gen_index_buffers(mesh);
 
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Mesh loaded with %lu vertex attributes and %lu faces\n", array_size(mesh->vertices), mesh->num_faces);
   return true;
 }
 

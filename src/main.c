@@ -7,8 +7,6 @@
 #include "mat.h"
 #include "shader.h"
 #include "mesh.h"
-#include "array.h"
-#include "obj.h"
 
 void check_gl_errors();
 void init();
@@ -101,10 +99,6 @@ int main(int argc, char **argv) {
     snprintf(vertex_shader, 256, "shaders/%s.vert.glsl", argv[2]);
     snprintf(fragment_shader, 256, "shaders/%s.frag.glsl", argv[2]);
   }
-
-  obj_parsed_data_t d;
-  obj_parse(&d, obj_model);
-  obj_parser_free_parsed_data(&d);
 
   init();
 

@@ -56,6 +56,7 @@ typedef struct {
 
   // List of face groups
   array_t *faces;
+  size_t num_faces;
 } mesh_t;
 
 bool mesh_load(mesh_t *mesh, const char *objfile);
