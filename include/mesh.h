@@ -2,10 +2,10 @@
 #define __MESH_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <SDL2/SDL.h>
 
-#include "vec.h"
 #include "array.h"
 
 typedef struct {
@@ -20,9 +20,9 @@ typedef struct {
 } texture_t;
 
 typedef struct {
-  vec3_t diffuse;
-  vec3_t ambient;
-  vec3_t specular;
+  float diffuse[3];
+  float ambient[3];
+  float specular[3];
 
   // This is essentially the specular exponent
   float shininess;

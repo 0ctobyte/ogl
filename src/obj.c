@@ -153,45 +153,47 @@ bool obj_parser_found(obj_parser_t *p, token_type_t type) {
 void obj_parser_vtag(obj_parser_t *p, array_t *a) {
   // v = 'v', whitespace, float, whitespace, float, whitespace, float
   // A vtag is followed by 3 floats
-  float coords[3];
+  float v[3];
 
   for(uint32_t i = 0; i < 3; ++i) {
     obj_parser_expect(p, FLOAT);
-    coords[i] = strtof(array_data(p->token.lexeme), NULL);
+    v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
-  array_append(a, &coords);
+  array_append(a, &v);
 }
 
 void obj_parser_vttag(obj_parser_t *p, array_t *a) {
   // vt = "vt", whitespace, float, whitespace, float, [whitespace, float]
-  float coords[3];
+  float v[3];
 
   for(uint32_t i = 0; i < 2; ++i) {
     obj_parser_expect(p, FLOAT);
-    coords[i] = strtof(array_data(p->token.lexeme), NULL);
+    v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
   if(obj_parser_found(p, FLOAT)) {
     // In case we get a 3d texture coordinate
-    coords[2] = strtof(array_data(p->token.lexeme), NULL);
+    v[2] = strtof(array_data(p->token.lexeme), NULL);
   } else {
-    coords[2] = 0.0f;
+    v[2] = 0.0f;
   }
 
-  array_append(a, &coords);
+  // Blender's UV coordinate system is vertically flipped compared to OpenGL's
+  v[1] = 1 - v[1];
+  array_append(a, &v);
 }
 
 void obj_parser_vntag(obj_parser_t *p, array_t *a) {
   // vn = "vn", whitespace, float, whitespace, float, whitespace, float
-  float coords[3];
+  float v[3];
 
   for(uint32_t i = 0; i < 3; ++i) {
     obj_parser_expect(p, FLOAT);
-    coords[i] = strtof(array_data(p->token.lexeme), NULL);
+    v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
-  array_append(a, &coords);
+  array_append(a, &v);
 }
 
 void obj_parser_ftag(obj_parser_t *p, array_t *i_positions, array_t *i_texcoords, array_t *i_normals) {

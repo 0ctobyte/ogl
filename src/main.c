@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
   SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+  //SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
   
   // Create the SDL window
   window = SDL_CreateWindow("OGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, SDL_WINDOW_OPENGL);
@@ -61,9 +61,9 @@ int main(int argc, char **argv) {
   }
 
   // Enable VSYNC
-  //if(SDL_GL_SetSwapInterval(1) != 0) {
-  //  SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VSYNC not enabled!: %s\n", SDL_GetError());
-  //}
+  if(SDL_GL_SetSwapInterval(1) != 0) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VSYNC not enabled!: %s\n", SDL_GetError());
+  }
 
   // Enable timer
   if(SDL_AddTimer(1000/60, timer, NULL) == 0) {
@@ -276,9 +276,9 @@ void draw() {
   shader_bind(s_id);
 
   // Set the per vertex attributes for the shader
-  shader_set_attrib(s_id, "in_Position", 3*sizeof(vec3_t), 0);
-  shader_set_attrib(s_id, "in_TexCoord", 3*sizeof(vec3_t), sizeof(vec3_t));
-  shader_set_attrib(s_id, "in_Normal", 3*sizeof(vec3_t), 2*sizeof(vec3_t));
+  shader_set_attrib(s_id, "in_Position", 9*sizeof(float), 0);
+  shader_set_attrib(s_id, "in_TexCoord", 9*sizeof(float), 3*sizeof(float));
+  shader_set_attrib(s_id, "in_Normal", 9*sizeof(float), 6*sizeof(float));
 
   // Set the uniform variables
   shader_set_uniform(s_id, "modelviewprojection", SHADER_UNIFORM_MAT4, modelviewprojection.m);

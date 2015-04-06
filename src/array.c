@@ -51,7 +51,7 @@ array_t* array_create(size_t capacity, size_t elem_size) {
   assert(a->data != NULL);
 
   // Clear the data
-  memset((char*)a->data, 0, a->capacity*a->elem_size);
+  array_clear(a);
 
   return a;
 }
@@ -75,7 +75,7 @@ void* array_at(array_t *a, uint32_t index) {
 }
 
 void* array_back(array_t *a) {
-  assert(a->size > 0);
+  assert(a != NULL && a->size > 0);
 
   return (void*)((char*)a->data+(a->elem_size*(a->size-1)));
 }
@@ -97,19 +97,50 @@ size_t array_size(array_t *a) {
 }
 
 void array_copy(array_t *dst, array_t *src) {
-  assert(dst->elem_size == src->elem_size);
+  assert(dst != NULL && src != NULL && dst->elem_size == src->elem_size);
 
   // Reset the dst array
-  array_delete(dst);
-  dst = array_create(src->size, src->elem_size);
+  if(dst->capacity < src->capacity) _array_resize(dst, src->capacity);
+  array_clear(dst);
 
   // Copy the data
   memcpy((char*)dst->data, (char*)src->data, src->size*src->elem_size);
   dst->size = src->size;
 }
 
+void array_cat_str(array_t *dst, const char *str) {
+  assert(dst != NULL && dst->elem_size == sizeof(char) && str != NULL);
+
+  // Concatenate the string to the array
+  size_t size = strlen(str);
+  for(uint32_t i = 0; i < size; ++i) array_append(dst, (void*)(&str[i]));
+}
+
+void array_prepend_str(array_t *dst, const char *str) {
+  assert(dst != NULL && dst->elem_size == sizeof(char) && str != NULL);
+
+  array_t *t = array_create(16, sizeof(char));
+  array_copy(t, dst);
+
+  array_clear(dst);
+  array_cat_str(dst, str);
+  array_cat(dst, t);
+  
+  array_delete(t);
+}
+
+void array_cat(array_t *dst, array_t *src) {
+  assert(dst != NULL && src != NULL && dst->elem_size == src->elem_size);
+
+  // Concatenate the two arrays
+  size_t size = array_size(src);
+  for(uint32_t i = 0; i < size; i++) array_append(dst, array_at(src, i));
+}
+
+
 void array_clear(array_t *a) {
-  memset(a->data, 0, a->size*a->elem_size);
+  assert(a != NULL);
+  memset(a->data, 0, a->capacity*a->elem_size);
   a->size = 0;
 }
 

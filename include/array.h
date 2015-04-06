@@ -13,6 +13,9 @@ void array_set(array_t *a, uint32_t index, void *datum);
 const void* array_data(array_t *a);
 size_t array_size(array_t *a);
 void array_copy(array_t *dst, array_t *src);
+void array_cat(array_t *dst, array_t *src);
+void array_cat_str(array_t *dst, const char *str);
+void array_prepend_str(array_t *dst, const char *str);
 void array_clear(array_t *a);
 void array_delete(array_t *a);
 

@@ -33,15 +33,15 @@ typedef struct {
 
 int32_t obj_parser_init(obj_parser_t *p, const char *filename);
 void obj_parser_free(obj_parser_t *p);
+
 uint32_t obj_lexer_get_token(obj_parser_t *p);
 
 void obj_parser_vtag(obj_parser_t *p, array_t *a);
 void obj_parser_vttag(obj_parser_t *p, array_t *a);
 void obj_parser_vntag(obj_parser_t *p, array_t *a);
-void obj_parser_ftag(obj_parser_t *p, array_t *i_positions, array_t *i_texcoords, array_t *i_normals);
+void obj_parser_ftag(obj_parser_t *p, array_t *l, array_t *t, array_t *n);
 void obj_parser_mtllibtag(obj_parser_t *p, array_t *a);
 void obj_parser_usemtltag(obj_parser_t *p, array_t *a);
-
 
 #endif // __OBJ_H__
 
