@@ -79,7 +79,7 @@ uint32_t obj_lexer_get_token(obj_parser_t *p) {
   }
 
   // Check if the token is a tag: r'vn|vt|v|f'
-  if(lexeme[0] == 'v' || lexeme[0] == 'f' || lexeme[0] == 'u' || lexeme[0] == 'm') {
+  if(isalpha(lexeme[0])) {
     // Which kind of tag?
     if(strcmp(lexeme, "vn") == 0) p->token.type = VNTAG;
     else if(strcmp(lexeme, "vt") == 0) p->token.type = VTTAG;

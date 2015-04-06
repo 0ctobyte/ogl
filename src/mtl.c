@@ -10,6 +10,9 @@
 #include "mtl.h"
 
 uint32_t mtl_lexer_get_token(mtl_parser_t *p) {
+  mtl_token_type_t prev_type = p->token.type;
+  p->token.type = UNKNOWN;
+
   // Skip comment lines
   while(p->fstring[p->c_index] == '#') {
     p->c_index += strcspn(&p->fstring[p->c_index], "\n");
@@ -37,7 +40,67 @@ uint32_t mtl_lexer_get_token(mtl_parser_t *p) {
   // Get the actual data from the array
   char *lexeme = (char*)array_data(p->token.lexeme);
 
-  if(tok_len == 0 || lexeme == NULL) return 1;
+  // Check if this token is an identifier depending on the the previous token type
+  if(prev_type >= MAPKATAG && prev_type <= NEWMTLTAG) {
+    p->token.type = IDENTIFIER;
+    return 0;
+  }
+
+  // Check if the token is a tag
+  if(isalpha(lexeme[0])) {
+    // Which kind of tag
+    if(strcmp(lexeme, "Ns") == 0) p->token.type = NSTAG;
+    else if(strcmp(lexeme, "Ka") == 0) p->token.type = KATAG;
+    else if(strcmp(lexeme, "Kd") == 0) p->token.type = KDTAG;
+    else if(strcmp(lexeme, "Ks") == 0) p->token.type = KSTAG;
+    else if(strcmp(lexeme, "d") == 0) p->token.type = DTAG;
+    else if(strcmp(lexeme, "map_Ka") == 0) p->token.type = MAPKATAG;
+    else if(strcmp(lexeme, "map_Kd") == 0) p->token.type = MAPKDTAG;
+    else if(strcmp(lexeme, "map_Ks") == 0) p->token.type = MAPKSTAG;
+    else if(strcmp(lexeme, "map_Bump") == 0) p->token.type = MAPBUMPTAG;
+    else if(strcmp(lexeme, "map_d") == 0) p->token.type = MAPDTAG;
+    else if(strcmp(lexeme, "newmtl") == 0) p->token.type = NEWMTLTAG;
+    else p->token.type = ERROR;
+
+    return (p->token.type == ERROR) ? 1 : 0;
+  }
+
+  // Check if it is a floating point number: -?[0-9]+\.[0-9]+
+  if(strchr(lexeme, '.') != NULL && (lexeme[0] == '-' || isdigit(lexeme[0]))) {
+    p->token.type = ERROR;
+
+    // Confirm that this is a correctly formatted float
+    size_t index = 0;
+    if(lexeme[index] == '-') index++;
+    while(isdigit(lexeme[index++]));
+
+    // Must be a period
+    if(lexeme[(index-1)] != '.') return 1;
+
+    // Continue confirming digits in the decimal portion
+    while(isdigit(lexeme[index++]));
+
+    // If index is the number as tok_len then we have successfully confirmed a floating point number
+    if(--index != tok_len) return 1;
+
+    p->token.type = FLOAT;
+    return 0;
+  }
+
+  // Check if it is a uint: [0-9]+
+  if(isdigit(lexeme[0])) {
+    p->token.type = ERROR;
+
+    // Confirm that this is a correctly formatted uint
+    size_t index = 0;
+    while(isdigit(lexeme[index++]));
+
+    // If index is the same number as tok_len then we have successfully confirmed a uint
+    if(--index != tok_len) return 1;
+
+    p->token.type = UINT;
+    return 0;
+  }
 
   return 0;
 }
