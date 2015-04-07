@@ -4,19 +4,19 @@
 #include "array.h"
 
 typedef enum {
-  UNKNOWN,
-  VTAG,
-  VNTAG,
-  VTTAG,
-  FTAG,
-  MTLLIBTAG,
-  USEMTLTAG,
-  IDENTIFIER,
-  FLOAT,
-  UINT,
-  SEPARATOR,
-  ERROR,
-  ENDOFFILE
+  OBJ_UNKNOWN,
+  OBJ_VTAG,
+  OBJ_VNTAG,
+  OBJ_VTTAG,
+  OBJ_FTAG,
+  OBJ_MTLLIBTAG,
+  OBJ_USEMTLTAG,
+  OBJ_IDENTIFIER,
+  OBJ_FLOAT,
+  OBJ_UINT,
+  OBJ_SEPARATOR,
+  OBJ_ERROR,
+  OBJ_ENDOFFILE
 } obj_token_type_t;
 
 typedef struct {

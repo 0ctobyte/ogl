@@ -9,6 +9,13 @@
 #include "mesh.h"
 #include "vec.h"
 #include "obj.h"
+#include "mtl.h"
+
+// A material definition. This structure holds the name of the material as well as all the relevant values for that material
+typedef struct {
+  material_t mtl;
+  array_t *mtl_name;
+} material_def_t;
 
 void _mesh_gen_buffers(mesh_t *mesh) {
   // Generate the name for the vertex array object (VAO)
@@ -45,6 +52,17 @@ void _mesh_gen_index_buffers(mesh_t *mesh) {
   glBindVertexArray(0);
 }
 
+void _mesh_init_material(material_t *mtl) {
+  mtl->diffuse[0] = 0.75f, mtl->diffuse[1] = 0.75f, mtl->diffuse[2] = 0.75f;
+  mtl->ambient[0] = 0.0f, mtl->ambient[1] = 0.0f, mtl->ambient[2] = 0.0f;
+  mtl->specular[0] = 1.0f, mtl->specular[1] = 1.0f, mtl->specular[2] = 1.0f;
+  mtl->shininess = 80.0f;
+  mtl->transparency = 1.0f;
+  mtl->tex.texID = 0;
+  mtl->tex.texture = NULL;
+  mtl->tex.use_texture = false;
+}
+
 void _mesh_create_material_group(mesh_t *mesh) {
   // Create a new material group
   material_group_t grp;
@@ -53,25 +71,15 @@ void _mesh_create_material_group(mesh_t *mesh) {
   grp.indices = array_create(2, sizeof(uint32_t));
 
   // Default values for the material in case none exist
-  grp.mtl.diffuse[0] = 0.75f, grp.mtl.diffuse[1] = 0.75f, grp.mtl.diffuse[2] = 0.75f;
-  grp.mtl.ambient[0] = 0.0f, grp.mtl.ambient[1] = 0.0f, grp.mtl.ambient[2] = 0.0f;
-  grp.mtl.specular[0] = 1.0f, grp.mtl.specular[1] = 1.0f, grp.mtl.specular[2] = 1.0f;
-  grp.mtl.shininess = 80.0f;
-  grp.mtl.transparency = 1.0f;
-  grp.mtl.tex.texID = 0;
-  grp.mtl.tex.texture = NULL;
-  grp.mtl.tex.use_texture = false;
+  _mesh_init_material(&grp.mtl);
 
   // Add the material group to the mesh
   array_append(mesh->mtl_grps, &grp);
 }
 
-void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
-  // Get the latest material group
-  material_group_t *grps = (material_group_t*)array_at(mesh->mtl_grps, (uint32_t)array_size(mesh->mtl_grps)-1);
-
+void _mesh_load_texture(mesh_t *mesh, material_t *mtl, const char *tex_filename) {
   // Load the BMP
-  grps->mtl.tex.use_texture = 0;
+  mtl->tex.use_texture = 0;
   SDL_Surface *surface = SDL_LoadBMP(tex_filename);
 
   // Make sure the file exists and was loaded properly
@@ -80,15 +88,17 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
     return;
   }
 
-  // Convert the surface to RGBA
-  grps->mtl.tex.texture = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
-  if(surface != NULL) SDL_FreeSurface(surface);
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Size of \'%s\': %u bytes, dimensions: %u x %u pixels\n", tex_filename, surface->w*surface->h*surface->format->BytesPerPixel, surface->w, surface->h);
   
+  // Convert the surface to RGBA
+  mtl->tex.texture = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+  if(surface != NULL) SDL_FreeSurface(surface);
+ 
   glBindVertexArray(mesh->vao);
 
   // Generate the texture handle
-  glGenTextures(1, &grps->mtl.tex.texID);
-  glBindTexture(GL_TEXTURE_2D, grps->mtl.tex.texID);
+  glGenTextures(1, &mtl->tex.texID);
+  glBindTexture(GL_TEXTURE_2D, mtl->tex.texID);
 
   // Set the texture parameters
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -97,106 +107,110 @@ void _mesh_load_texture(mesh_t *mesh, const char *tex_filename) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   // Upload the texture pixel data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)grps->mtl.tex.texture->w, (GLsizei)grps->mtl.tex.texture->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, grps->mtl.tex.texture->pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)mtl->tex.texture->w, (GLsizei)mtl->tex.texture->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, mtl->tex.texture->pixels);
 
   // Unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindVertexArray(0);
 
   // Free the surface
-  grps->mtl.tex.use_texture = 1;
-  SDL_FreeSurface(grps->mtl.tex.texture);
+  mtl->tex.use_texture = 1;
+  SDL_FreeSurface(mtl->tex.texture);
 }
 
-void _mesh_load_mtl(mesh_t *mesh, const char *mtl_filename, const char *mtl_name) {
-  FILE *mtl_file = fopen(mtl_filename, "r");
-
-  // Make sure the mtl_file exists
-  if(mtl_file == NULL) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading mtl file\n");
-    return;
+bool _mesh_load_material(mesh_t *mesh, const char *mtl_filename, array_t *mtl_list) {
+  // Initialize the parser struct
+  mtl_parser_t p;
+  if(mtl_parser_init(&p, mtl_filename) != 0) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load mtllib: %s\n", mtl_filename);
+    return false;
   }
 
-  // Find the material name in the material library
-  char line[256];
-  while(fgets(line, 256, mtl_file) != NULL) {
-    char *pch = strtok(line, " ");
-    if(pch != NULL && strcmp(pch, "newmtl") != 0) continue;
-    pch = strtok(NULL, " ");
-    if(pch == NULL) continue;
-    pch[strlen(pch)-1] = '\0';
-    if(strcmp(pch, mtl_name) == 0) break;
-  }
-
-  // Check for any errors or if EOF has been reached. This means the material could not be found in the material library
-  if(ferror(mtl_file) != 0 || feof(mtl_file) != 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not find specified material: \'%s\' in the mtllib\n", mtl_name);
-    fseek(mtl_file, 0, SEEK_SET);
-    return;
-  }
-
-  // Start reading the material data
-  material_group_t *grp = (material_group_t*)array_at(mesh->mtl_grps, (uint32_t)array_size(mesh->mtl_grps)-1);
-  while(fgets(line, 256, mtl_file) != NULL) {
-    char *pch = strtok(line, " ");
-
-    // Break if we have reached the end of the material definition (i.e. a new material definition line has been reached)
-    if(strcmp(pch, "newmtl") == 0) break;
-
-    if(strcmp(pch, "Ns") == 0) {
-      // The specular shininess
-      pch = strtok(NULL, " ");
-      if(pch == NULL) continue;
-      grp->mtl.shininess = strtof(pch, NULL);
-    } else if(strcmp(pch, "d") == 0) {
-      // The alpha transparency
-      pch = strtok(NULL, " ");
-      if(pch == NULL) continue;
-      grp->mtl.transparency = strtof(pch, NULL);
-    } else if(strcmp(pch, "Ka") == 0) {
-      // The material ambient color
-      float v[3] = {0.0f, 0.0f, 0.0f};
-      pch = strtok(NULL, " ");
-      for(uint32_t i = 0; pch != NULL; ++i) {
-        v[i] = strtof(pch, NULL);
-        pch = strtok(NULL, " ");
+  for(; p.token.type != MTL_ENDOFFILE; mtl_lexer_get_token(&p)) {
+    // Get the latest material definition
+    material_def_t *mtl_def = (array_size(mtl_list) > 0) ? (material_def_t*)array_back(mtl_list): NULL;
+    
+    switch(p.token.type) {
+    case MTL_NEWMTLTAG:
+      {
+        // Append a new material definition to the list
+        mtl_parser_expect(&p, MTL_IDENTIFIER);
+        
+        material_def_t newmtl;
+        newmtl.mtl_name = array_create(array_size(p.token.lexeme), sizeof(char));
+        
+        array_copy(newmtl.mtl_name, p.token.lexeme);
+        _mesh_init_material(&newmtl.mtl);
+        
+        array_append(mtl_list, &newmtl);
+        break;
       }
-      memcpy(grp->mtl.ambient, v, 3*sizeof(float));
-    } else if(strcmp(pch, "Kd") == 0) {
-      // The material diffuse color
-      float v[3] = {0.0f, 0.0f, 0.0f};
-      pch = strtok(NULL, " ");
-      for(uint32_t i = 0; pch != NULL; ++i) {
-        v[i] = strtof(pch, NULL);
-        pch = strtok(NULL, " ");
+    case MTL_NSTAG:
+      {
+        // Parse the shininess exponent
+        if(mtl_parser_found(&p, MTL_FLOAT) || mtl_parser_found(&p, MTL_UINT)) {
+          mtl_def->mtl.shininess = strtof(array_data(p.token.lexeme), NULL);
+        }
+        break;
       }
-      memcpy(grp->mtl.diffuse, v, 3*sizeof(float));
-    } else if(strcmp(pch, "Ks") == 0) {
-      // The material specular color
-      float v[3] = {0.0f, 0.0f, 0.0f};
-      pch = strtok(NULL, " ");
-      for(uint32_t i = 0; pch != NULL; ++i) {
-        v[i] = strtof(pch, NULL);
-        pch = strtok(NULL, " ");
+    case MTL_KATAG:
+      {
+        // Parse the ambient reflectivity
+        for(uint32_t i = 0; i < 3; i++) {
+          mtl_parser_expect(&p, MTL_FLOAT);
+          mtl_def->mtl.ambient[i] = strtof(array_data(p.token.lexeme), NULL);
+        }
+        break;
       }
-      memcpy(grp->mtl.specular, v, 3*sizeof(float));
-    } else if(strcmp(pch, "map_Kd") == 0) {
-      pch = strtok(NULL, " ");
-      if(pch == NULL) continue;
-      char s[256];
-      pch[strlen(pch)-1] = '\0';
-      snprintf(s, 256, "resources/%s", pch);
-      _mesh_load_texture(mesh, s);
+    case MTL_KDTAG:
+      {
+        // Parse the diffuse reflectivity
+        for(uint32_t i = 0; i < 3; i++) {
+          mtl_parser_expect(&p, MTL_FLOAT);
+          mtl_def->mtl.diffuse[i] = strtof(array_data(p.token.lexeme), NULL);
+        }
+        break;
+      }
+    case MTL_KSTAG:
+      {
+        // Parse the specular reflectivity
+        for(uint32_t i = 0; i < 3; i++) {
+          mtl_parser_expect(&p, MTL_FLOAT);
+          mtl_def->mtl.specular[i] = strtof(array_data(p.token.lexeme), NULL);
+        }
+        break;
+      }
+    case MTL_DTAG:
+      {
+        // Parse the dissolve/transparency value
+        if(mtl_parser_found(&p, MTL_FLOAT) || mtl_parser_found(&p, MTL_UINT)) {
+          mtl_def->mtl.transparency = strtof(array_data(p.token.lexeme), NULL);
+        }
+        break;
+      }
+    case MTL_MAPKDTAG:
+      {
+        // Parse the diffuse texture map
+        mtl_parser_expect(&p, MTL_IDENTIFIER);
+        
+        array_t *texname = array_create(array_size(p.token.lexeme), sizeof(char));
+        array_copy(texname, p.token.lexeme);
+        array_prepend_str(texname, "resources/");
+        
+        // Load the texture from the file
+        _mesh_load_texture(mesh, &mtl_def->mtl, array_data(texname));
+        array_delete(texname);
+        break;
+      }
+    default:
+      break;
     }
   }
 
-  // Check for any errors 
-  if(ferror(mtl_file) != 0) {
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error reading mtllib\n");
-  }
+  // Delete the parser struct
+  mtl_parser_free(&p);
 
-  // Close the file
-  fclose(mtl_file);
+  return true;
 }
 
 bool mesh_load(mesh_t *mesh, const char *objfile) {
@@ -216,17 +230,17 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   array_t *normals = array_create(256, 3*sizeof(float));
   array_t *mtllib = array_create(16, sizeof(char));
 
-  for(; p.token.type != ENDOFFILE; obj_lexer_get_token(&p)) {
+  for(; p.token.type != OBJ_ENDOFFILE; obj_lexer_get_token(&p)) {
     switch(p.token.type) {
-    case VNTAG:
+    case OBJ_VNTAG:
       // Parse the vertex normals
       obj_parser_vntag(&p, normals);
       break;
-    case VTTAG:
+    case OBJ_VTTAG:
       // Parse the vertex texture coordinates
       obj_parser_vttag(&p, uv);
       break;
-    case VTAG:
+    case OBJ_VTAG:
       // Parse the vertex position coordinates
       obj_parser_vtag(&p, mesh->vattributes);
 
@@ -236,7 +250,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
       array_append(mesh->vattributes, &u);
       array_append(mesh->vattributes, &u);
       break;
-    case MTLLIBTAG:
+    case OBJ_MTLLIBTAG:
       // Parse the name of the mtllib file
       obj_parser_mtllibtag(&p, mtllib);
 
@@ -248,14 +262,18 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
     }
   }
 
+  // If a mtllib file was specified, parse it
+  array_t *mtl_list = array_create(2, sizeof(material_def_t));
+  if(array_size(mtllib) > 0) _mesh_load_material(mesh, array_data(mtllib), mtl_list);
+
   array_t *i_positions = array_create(4, sizeof(uint32_t));
   array_t *i_texcoords = array_create(4, sizeof(uint32_t));
   array_t *i_normals = array_create(4, sizeof(uint32_t));
 
   // Parse the indices as they are read in and place the vertex attributes in the correct index in the vertex attribute array
-  for(p.c_index = 0, p.token.type = UNKNOWN; p.token.type != ENDOFFILE; obj_lexer_get_token(&p)) {
+  for(p.c_index = 0, p.token.type = OBJ_UNKNOWN; p.token.type != OBJ_ENDOFFILE; obj_lexer_get_token(&p)) {
     switch(p.token.type) {
-    case FTAG:
+    case OBJ_FTAG:
       {
         // Parse the face indices
         array_clear(i_positions);
@@ -326,7 +344,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
 
         break;
       }
-    case USEMTLTAG:
+    case OBJ_USEMTLTAG:
       {
         array_t *mtl_name = array_create(8, sizeof(char));
         obj_parser_usemtltag(&p, mtl_name);
@@ -335,7 +353,24 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
         _mesh_create_material_group(mesh);
         
         // Load the material data for the material group
-        _mesh_load_mtl(mesh, array_data(mtllib), array_data(mtl_name));
+        // Have to find the material with the specified material name in the material definition list
+        bool found_mtl = false;
+        for(uint32_t i = 0; i < array_size(mtl_list); i++) {
+          material_def_t *mtl_def = array_at(mtl_list, i);
+          if(strcmp((char*)array_data(mtl_def->mtl_name), (char*)array_data(mtl_name)) == 0) {
+            material_group_t *grp = (material_group_t*)array_back(mesh->mtl_grps);
+
+            // Copy the material data
+            memcpy(&grp->mtl, &mtl_def->mtl, sizeof(material_t));
+            found_mtl = true;
+            break;
+          }
+        }
+
+        if(!found_mtl) {
+          SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not find material: \'%s\'\n", (char*)array_data(mtl_name));
+        }
+
         array_delete(mtl_name);
         break;
       }
@@ -352,6 +387,13 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   array_delete(i_texcoords);
   array_delete(i_normals);
 
+  // Cleanup up the material definition list
+  for(uint32_t i = 0; i < array_size(mtl_list); i++) {
+    material_def_t *mtl_def = (material_def_t*)array_at(mtl_list, i);
+    array_delete(mtl_def->mtl_name);
+  }
+  array_delete(mtl_list);
+  
   // Delete the parser struct
   obj_parser_free(&p);
 

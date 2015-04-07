@@ -10,24 +10,24 @@
 #include "obj.h"
 
 /*static char *type_strings[16] = {
-  "UNKNOWN", 
-  "VTAG",
-  "VNTAG",
-  "VTTAG",
-  "FTAG",
-  "MTLLIBTAG",
-  "USEMTLTAG",
-  "IDENTIFIER",
-  "FLOAT",
-  "UINT",
-  "SEPARATOR",
-  "ERROR",
-  "ENDOFFILE"
+  "OBJ_UNKNOWN", 
+  "OBJ_VTAG",
+  "OBJ_VNTAG",
+  "OBJ_VTTAG",
+  "OBJ_FTAG",
+  "OBJ_MTLLIBTAG",
+  "OBJ_USEMTLTAG",
+  "OBJ_IDENTIFIER",
+  "OBJ_FLOAT",
+  "OBJ_UINT",
+  "OBJ_SEPARATOR",
+  "OBJ_ERROR",
+  "OBJ_ENDOFFILE"
 };*/
 
 uint32_t obj_lexer_get_token(obj_parser_t *p) {
   obj_token_type_t prev_type = p->token.type;
-  p->token.type = UNKNOWN;
+  p->token.type = OBJ_UNKNOWN;
 
   // Skip comment lines
   while(p->fstring[p->c_index] == '#') {
@@ -40,7 +40,7 @@ uint32_t obj_lexer_get_token(obj_parser_t *p) {
 
   // Check if end of file has been reached
   if(p->c_index >= p->fsize) {
-    p->token.type = ENDOFFILE;
+    p->token.type = OBJ_ENDOFFILE;
     return 1;
   }
 
@@ -59,42 +59,45 @@ uint32_t obj_lexer_get_token(obj_parser_t *p) {
     tok_len++;
   }
 
+  char c = 0;
+  array_append(p->token.lexeme, &c);
+
   // Get the actual data from the array
   char *lexeme = (char*)array_data(p->token.lexeme);
 
   // Check if it is a separator
   if(lexeme[0] == '/') {
-    p->token.type = ERROR;
+    p->token.type = OBJ_ERROR;
 
     if(tok_len != 1) return 1;
 
-    p->token.type = SEPARATOR;
+    p->token.type = OBJ_SEPARATOR;
     return 0;
   }
 
   // Check if this token is an identifier depending on the previous type
-  if(prev_type == MTLLIBTAG || prev_type == USEMTLTAG) {
-    p->token.type = IDENTIFIER;
+  if(prev_type == OBJ_MTLLIBTAG || prev_type == OBJ_USEMTLTAG) {
+    p->token.type = OBJ_IDENTIFIER;
     return 0;
   }
 
   // Check if the token is a tag: r'vn|vt|v|f'
   if(isalpha(lexeme[0])) {
     // Which kind of tag?
-    if(strcmp(lexeme, "vn") == 0) p->token.type = VNTAG;
-    else if(strcmp(lexeme, "vt") == 0) p->token.type = VTTAG;
-    else if(strcmp(lexeme, "v") == 0) p->token.type = VTAG;
-    else if(strcmp(lexeme, "f") == 0) p->token.type = FTAG;
-    else if(strcmp(lexeme, "mtllib") == 0) p->token.type = MTLLIBTAG;
-    else if(strcmp(lexeme, "usemtl") == 0) p->token.type = USEMTLTAG;
-    else p->token.type = ERROR;
+    if(strcmp(lexeme, "vn") == 0) p->token.type = OBJ_VNTAG;
+    else if(strcmp(lexeme, "vt") == 0) p->token.type = OBJ_VTTAG;
+    else if(strcmp(lexeme, "v") == 0) p->token.type = OBJ_VTAG;
+    else if(strcmp(lexeme, "f") == 0) p->token.type = OBJ_FTAG;
+    else if(strcmp(lexeme, "mtllib") == 0) p->token.type = OBJ_MTLLIBTAG;
+    else if(strcmp(lexeme, "usemtl") == 0) p->token.type = OBJ_USEMTLTAG;
+    else p->token.type = OBJ_ERROR;
 
-    return (p->token.type == ERROR) ? 1 : 0;
+    return (p->token.type == OBJ_ERROR) ? 1 : 0;
   }
 
   // Check if it is a floating point number: -?[0-9]+\.[0-9]+
   if(strchr(lexeme, '.') != NULL && (lexeme[0] == '-' || isdigit(lexeme[0]))) {
-    p->token.type = ERROR;
+    p->token.type = OBJ_ERROR;
 
     // Confirm that this is a correctly formatted float
     size_t index = 0;
@@ -110,13 +113,13 @@ uint32_t obj_lexer_get_token(obj_parser_t *p) {
     // If index is the number as tok_len then we have successfully confirmed a floating point number
     if(--index != tok_len) return 1;
 
-    p->token.type = FLOAT;
+    p->token.type = OBJ_FLOAT;
     return 0;
   }
 
   // Check if it is a uint: [0-9]+
   if(isdigit(lexeme[0])) {
-    p->token.type = ERROR;
+    p->token.type = OBJ_ERROR;
 
     // Confirm that this is a correctly formatted uint
     size_t index = 0;
@@ -125,7 +128,7 @@ uint32_t obj_lexer_get_token(obj_parser_t *p) {
     // If index is the same number as tok_len then we have successfully confirmed a uint
     if(--index != tok_len) return 1;
 
-    p->token.type = UINT;
+    p->token.type = OBJ_UINT;
     return 0;
   }
 
@@ -144,7 +147,7 @@ bool obj_parser_found(obj_parser_t *p, obj_token_type_t type) {
   obj_lexer_get_token(p);
 
   // Rewind character stream if false
-  if(p->token.type != type) p->c_index -= array_size(p->token.lexeme);
+  if(p->token.type != type) p->c_index -= (array_size(p->token.lexeme)-1);
 
   return (p->token.type == type);
 }
@@ -155,7 +158,7 @@ void obj_parser_vtag(obj_parser_t *p, array_t *a) {
   float v[3];
 
   for(uint32_t i = 0; i < 3; ++i) {
-    obj_parser_expect(p, FLOAT);
+    obj_parser_expect(p, OBJ_FLOAT);
     v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
@@ -167,11 +170,11 @@ void obj_parser_vttag(obj_parser_t *p, array_t *a) {
   float v[3];
 
   for(uint32_t i = 0; i < 2; ++i) {
-    obj_parser_expect(p, FLOAT);
+    obj_parser_expect(p, OBJ_FLOAT);
     v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
-  if(obj_parser_found(p, FLOAT)) {
+  if(obj_parser_found(p, OBJ_FLOAT)) {
     // In case we get a 3d texture coordinate
     v[2] = strtof(array_data(p->token.lexeme), NULL);
   } else {
@@ -188,7 +191,7 @@ void obj_parser_vntag(obj_parser_t *p, array_t *a) {
   float v[3];
 
   for(uint32_t i = 0; i < 3; ++i) {
-    obj_parser_expect(p, FLOAT);
+    obj_parser_expect(p, OBJ_FLOAT);
     v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
 
@@ -203,27 +206,27 @@ void obj_parser_ftag(obj_parser_t *p, array_t *i_positions, array_t *i_texcoords
   
   // 3 sets of indices for each vertex
   for(uint32_t i = 0; i < 3; ++i) {
-    obj_parser_expect(p, UINT);
+    obj_parser_expect(p, OBJ_UINT);
     uint32_t index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
     array_append(i_positions, &index);
 
-    if(obj_parser_found(p, SEPARATOR)) {
+    if(obj_parser_found(p, OBJ_SEPARATOR)) {
       // Double separator means only normal index specified
-      if(obj_parser_found(p, SEPARATOR)) {
-        obj_parser_expect(p, UINT);
+      if(obj_parser_found(p, OBJ_SEPARATOR)) {
+        obj_parser_expect(p, OBJ_UINT);
 
         index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
         array_append(i_normals, &index);
       } else {
         // One separator indicates a texcoord 
-        obj_parser_expect(p, UINT);
+        obj_parser_expect(p, OBJ_UINT);
 
         index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
         array_append(i_texcoords, &index);
 
         // If another separator is found then a normal is also specified
-        if(obj_parser_found(p, SEPARATOR)) {
-          obj_parser_expect(p, UINT);
+        if(obj_parser_found(p, OBJ_SEPARATOR)) {
+          obj_parser_expect(p, OBJ_UINT);
 
           index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
           array_append(i_normals, &index);
@@ -236,7 +239,7 @@ void obj_parser_ftag(obj_parser_t *p, array_t *i_positions, array_t *i_texcoords
 void obj_parser_mtllibtag(obj_parser_t *p, array_t *a) {
   // mtllib = "mtllib", whitespace, identifier
   // Expect an identifier that indentifies the filename of the mtllib
-  obj_parser_expect(p, IDENTIFIER);
+  obj_parser_expect(p, OBJ_IDENTIFIER);
 
   // Copy the mtllib filename
   array_copy(a, p->token.lexeme);
@@ -245,7 +248,7 @@ void obj_parser_mtllibtag(obj_parser_t *p, array_t *a) {
 void obj_parser_usemtltag(obj_parser_t *p, array_t *a) {
   // usemtl = "usemtl", whitespace, identifier
   // Expect an identifier that indicates the material to use in the mtllib
-  obj_parser_expect(p, IDENTIFIER);
+  obj_parser_expect(p, OBJ_IDENTIFIER);
 
   // Copy the material name
   array_copy(a, p->token.lexeme);
@@ -278,7 +281,7 @@ int32_t obj_parser_init(obj_parser_t *p, const char *filename) {
   fstring[fsize] = 0;
 
   // Initialize the parser object
-  *p = (obj_parser_t){fstring, fsize, 0, {array_create(2, sizeof(char)), UNKNOWN}};
+  *p = (obj_parser_t){fstring, fsize, 0, {array_create(2, sizeof(char)), OBJ_UNKNOWN}};
 
   return 0;
 }
