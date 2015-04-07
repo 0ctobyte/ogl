@@ -4,7 +4,7 @@
 
 uniform mat4 modelviewprojection;
 
-in vec3 in_Position;
+layout(location = 0) in vec3 in_Position;
 
 void main()
 {

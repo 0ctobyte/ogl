@@ -275,11 +275,6 @@ void draw() {
   mesh_bind(&mesh);
   shader_bind(s_id);
 
-  // Set the per vertex attributes for the shader
-  shader_set_attrib(s_id, "in_Position", 9*sizeof(float), 0);
-  shader_set_attrib(s_id, "in_TexCoord", 9*sizeof(float), 3*sizeof(float));
-  shader_set_attrib(s_id, "in_Normal", 9*sizeof(float), 6*sizeof(float));
-
   // Set the uniform variables
   shader_set_uniform(s_id, "modelviewprojection", SHADER_UNIFORM_MAT4, modelviewprojection.m);
   shader_set_uniform(s_id, "modelview", SHADER_UNIFORM_MAT4, modelview.m);

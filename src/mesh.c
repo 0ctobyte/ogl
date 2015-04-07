@@ -29,8 +29,17 @@ void _mesh_gen_buffers(mesh_t *mesh) {
   glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
   glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(array_size(mesh->vattributes)*3*sizeof(float)), array_data(mesh->vattributes), GL_STATIC_DRAW);
 
-  // Unbind everything
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  // Set and enable the vertex attributes. 0 = vertex position, 1 = vertex texture coordinates, 2 = vertex normals
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (GLvoid*)0);
+
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (GLvoid*)(3*sizeof(float)));
+
+  glEnableVertexAttribArray(2);
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (GLvoid*)(6*sizeof(float)));
+
+  // Unbind VAO
   glBindVertexArray(0);
 }
 
@@ -409,13 +418,11 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
 
 void mesh_bind(mesh_t *mesh) {
   glBindVertexArray(mesh->vao);
-  glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
 }
 
 void mesh_unbind() {
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindTexture(GL_TEXTURE_2D, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 }
 

@@ -140,16 +140,6 @@ void shader_bind(uint32_t s_id) {
   glUseProgram(s_id);
 }
 
-void shader_set_attrib(uint32_t s_id, const char *attrib_name, size_t stride, uintptr_t offset) {
-  glUseProgram(s_id);
-
-  int32_t attrib_loc = glGetAttribLocation(s_id, attrib_name);
-  if(attrib_loc >= 0) {
-    glVertexAttribPointer((uint32_t)attrib_loc, 3, GL_FLOAT, GL_FALSE, (GLsizei)stride, (GLvoid*)offset);
-    glEnableVertexAttribArray((uint32_t)attrib_loc);
-  }
-}
-
 void shader_set_uniform(uint32_t s_id, const char *uniform_name, shader_uniform_type_t uniform_type, void *data) {
   glUseProgram(s_id);
 

@@ -31,9 +31,9 @@ uniform Material mtl = Material(vec3(0.75, 0.75, 0.75), vec3(1.0, 1.0, 1.0), vec
 uniform Camera cam = Camera(vec3(0.0, 0.0, 0.0));
 uniform sampler2D tex;
 
-in vec3 in_Position;
-in vec3 in_TexCoord;
-in vec3 in_Normal; 
+layout(location = 0) in vec3 in_Position;
+layout(location = 1) in vec3 in_TexCoord;
+layout(location = 2) in vec3 in_Normal; 
 
 // No interpolation over the pixel. The per-vertex color is the same over all the fragments
 flat out vec4 f_Color;
