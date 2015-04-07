@@ -34,14 +34,12 @@ typedef struct {
 
 // A group of faces using the same material
 typedef struct {
-  // Handle to the OpenGL index buffer object
-  uint32_t ibo;
-
   // The material used for this group of faces
   material_t mtl;
 
-  // List of indices in this face group
-  array_t *indices;
+  // The offset into the index list and the # of indices used by the material group
+  uint64_t offset;
+  size_t count;
 } material_group_t;
 
 typedef struct {
@@ -53,6 +51,12 @@ typedef struct {
   
   // List of vertex attributes (position, texture, normals)
   array_t *vattributes;
+
+  // Handle to the OpenGL index buffer object
+  uint32_t ibo;
+
+  // List of indices into the vertex attribute array
+  array_t *indices;
 
   // List of face groups
   array_t *mtl_grps;

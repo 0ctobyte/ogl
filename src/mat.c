@@ -111,8 +111,8 @@ void mat4_rotate(mat4_t *mat, float angle, const vec3_t *u) {
 
 void mat4_transpose(mat4_t *mat) {
 	mat4_t A;
-	for(uint32_t c=0; c<4; c++)
-		for(uint32_t r=0; r<4; r++)
+	for(uint64_t c=0; c<4; c++)
+		for(uint64_t r=0; r<4; r++)
 			A.m[r*4+c] = mat->m[c*4+r];
   memcpy(mat, &A, sizeof(mat4_t));
 }
@@ -121,14 +121,14 @@ void mat4_inverse(mat4_t *mat) {
 	mat4_t A;
 	float det = mat4_determinant(mat);
 	if(fabs(det) < 0.000001f) return;
-	for(uint32_t c=0; c<4; c++)
-		for(uint32_t r=0; r<4; r++)
+	for(uint64_t c=0; c<4; c++)
+		for(uint64_t r=0; r<4; r++)
 			A.m[c*4+r] = mat4_cofactor(mat, c, r)/det;
 	mat4_transpose(&A);
   memcpy(mat, &A, sizeof(mat4_t));
 }
 
-float mat4_cofactor(const mat4_t *mat, uint32_t column, uint32_t row) {
+float mat4_cofactor(const mat4_t *mat, uint64_t column, uint64_t row) {
 	if(column > 3 || row > 3) return 0.0f;
 	float cofactor = 0.0f;
 	for(int32_t c = 0; c < 4; c++)
@@ -161,10 +161,10 @@ float mat4_determinant(const mat4_t *mat) {
 
 void mat4_mult(mat4_t *mat1, const mat4_t *mat2) {
 	mat4_t a;
-	for(uint32_t i=0, offset=0, ii=0; i<16; i++, ii++)
+	for(uint64_t i=0, offset=0, ii=0; i<16; i++, ii++)
 	{
 		a.m[i]=0, offset=((i%4==0) ? i : offset), ii=((ii>3) ? 0 : ii);
-		for(uint32_t j=0, mult=0; j<4; mult++, j++)
+		for(uint64_t j=0, mult=0; j<4; mult++, j++)
 		{
 			a.m[i] += mat1->m[ii+mult*4] * mat2->m[offset+j];
 		}

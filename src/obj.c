@@ -25,7 +25,7 @@
   "OBJ_ENDOFFILE"
 };*/
 
-uint32_t obj_lexer_get_token(obj_parser_t *p) {
+uint64_t obj_lexer_get_token(obj_parser_t *p) {
   obj_token_type_t prev_type = p->token.type;
   p->token.type = OBJ_UNKNOWN;
 
@@ -157,7 +157,7 @@ void obj_parser_vtag(obj_parser_t *p, array_t *a) {
   // A vtag is followed by 3 floats
   float v[3];
 
-  for(uint32_t i = 0; i < 3; ++i) {
+  for(uint64_t i = 0; i < 3; ++i) {
     obj_parser_expect(p, OBJ_FLOAT);
     v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
@@ -169,7 +169,7 @@ void obj_parser_vttag(obj_parser_t *p, array_t *a) {
   // vt = "vt", whitespace, float, whitespace, float, [whitespace, float]
   float v[3];
 
-  for(uint32_t i = 0; i < 2; ++i) {
+  for(uint64_t i = 0; i < 2; ++i) {
     obj_parser_expect(p, OBJ_FLOAT);
     v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
@@ -190,7 +190,7 @@ void obj_parser_vntag(obj_parser_t *p, array_t *a) {
   // vn = "vn", whitespace, float, whitespace, float, whitespace, float
   float v[3];
 
-  for(uint32_t i = 0; i < 3; ++i) {
+  for(uint64_t i = 0; i < 3; ++i) {
     obj_parser_expect(p, OBJ_FLOAT);
     v[i] = strtof(array_data(p->token.lexeme), NULL);
   }
@@ -205,7 +205,7 @@ void obj_parser_ftag(obj_parser_t *p, array_t *i_positions, array_t *i_texcoords
   // | uint, separator, separator, uint, whitespace, uint, separator, separator, uint, whitespace, uint, separator, separator, uint)
   
   // 3 sets of indices for each vertex
-  for(uint32_t i = 0; i < 3; ++i) {
+  for(uint64_t i = 0; i < 3; ++i) {
     obj_parser_expect(p, OBJ_UINT);
     uint32_t index = (uint32_t)strtoul(array_data(p->token.lexeme), NULL, 10);
     array_append(i_positions, &index);

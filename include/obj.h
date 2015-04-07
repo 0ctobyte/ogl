@@ -34,7 +34,7 @@ typedef struct {
 int32_t obj_parser_init(obj_parser_t *p, const char *filename);
 void obj_parser_free(obj_parser_t *p);
 
-uint32_t obj_lexer_get_token(obj_parser_t *p);
+uint64_t obj_lexer_get_token(obj_parser_t *p);
 
 void obj_parser_vtag(obj_parser_t *p, array_t *a);
 void obj_parser_vttag(obj_parser_t *p, array_t *a);

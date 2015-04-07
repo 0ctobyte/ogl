@@ -287,7 +287,7 @@ void draw() {
   //shader_set_uniform(s_id, "cam.position", SHADER_UNIFORM_VEC3, &camera); 
    
   size_t size = array_size(mesh.mtl_grps);
-  for(uint32_t i = 0; i < size; i++) {
+  for(uint64_t i = 0; i < size; i++) {
     material_group_t *grp = (material_group_t*)array_at(mesh.mtl_grps, i);
 
     shader_set_uniform(s_id, "mtl.diffuse", SHADER_UNIFORM_VEC3, &grp->mtl.diffuse);
@@ -303,8 +303,7 @@ void draw() {
     uint32_t texture_unit = 0;
     shader_set_uniform(s_id, "tex", SHADER_UNIFORM_INT, &texture_unit);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, grp->ibo);
-    glDrawElements(GL_TRIANGLES, (GLsizei)array_size(grp->indices), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, (GLsizei)grp->count, GL_UNSIGNED_INT, (GLvoid*)(sizeof(uint32_t)*grp->offset));
   }
 
   shader_unbind();

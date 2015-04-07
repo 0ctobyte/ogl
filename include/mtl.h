@@ -38,7 +38,7 @@ typedef struct {
 int32_t mtl_parser_init(mtl_parser_t *p, const char *filename);
 void mtl_parser_free(mtl_parser_t *p);
 
-uint32_t mtl_lexer_get_token(mtl_parser_t *p);
+uint64_t mtl_lexer_get_token(mtl_parser_t *p);
 
 void mtl_parser_expect(mtl_parser_t *p, mtl_token_type_t expected);
 bool mtl_parser_found(mtl_parser_t *p, mtl_token_type_t type);

@@ -9,7 +9,7 @@
 
 #include "mtl.h"
 
-uint32_t mtl_lexer_get_token(mtl_parser_t *p) {
+uint64_t mtl_lexer_get_token(mtl_parser_t *p) {
   mtl_token_type_t prev_type = p->token.type;
   p->token.type = MTL_UNKNOWN;
 

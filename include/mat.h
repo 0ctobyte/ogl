@@ -25,7 +25,7 @@ void mat4_rotatef(mat4_t *mat, float angle, float x, float y, float z);
 void mat4_rotate(mat4_t *mat, float angle, const vec3_t *u);
 void mat4_transpose(mat4_t *mat);
 void mat4_inverse(mat4_t *mat);
-float mat4_cofactor(const mat4_t *mat, uint32_t column, uint32_t row);
+float mat4_cofactor(const mat4_t *mat, uint64_t column, uint64_t row);
 float mat4_determinant(const mat4_t *mat);
 void mat4_mult(mat4_t *mat1, const mat4_t *mat2);
 vec4_t mat4_multv(const mat4_t *mat, const vec4_t *v);

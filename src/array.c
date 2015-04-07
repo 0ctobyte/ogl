@@ -67,7 +67,7 @@ void array_append(array_t *a, void *datum) {
   a->size++;
 }
 
-void* array_at(array_t *a, uint32_t index) {
+void* array_at(array_t *a, uint64_t index) {
   // Check for out of bounds
   assert(a != NULL && index < a->size);
 
@@ -80,7 +80,7 @@ void* array_back(array_t *a) {
   return (void*)((char*)a->data+(a->elem_size*(a->size-1)));
 }
 
-void array_set(array_t *a, uint32_t index, void *datum) {
+void array_set(array_t *a, uint64_t index, void *datum) {
   assert(a != NULL && index < a->size);
 
   memcpy((char*)a->data+(a->elem_size*index), datum, a->elem_size);
@@ -113,7 +113,7 @@ void array_cat_str(array_t *dst, const char *str) {
 
   // Concatenate the string to the array
   size_t size = strlen(str);
-  for(uint32_t i = 0; i < size; ++i) array_append(dst, (void*)(&str[i]));
+  for(uint64_t i = 0; i < size; ++i) array_append(dst, (void*)(&str[i]));
 }
 
 void array_prepend_str(array_t *dst, const char *str) {
@@ -134,7 +134,7 @@ void array_cat(array_t *dst, array_t *src) {
 
   // Concatenate the two arrays
   size_t size = array_size(src);
-  for(uint32_t i = 0; i < size; i++) array_append(dst, array_at(src, i));
+  for(uint64_t i = 0; i < size; i++) array_append(dst, array_at(src, i));
 }
 
 
