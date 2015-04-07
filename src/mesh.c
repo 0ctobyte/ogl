@@ -439,7 +439,6 @@ void mesh_delete(mesh_t *mesh) {
     material_group_t *grp = (material_group_t*)array_at(mesh->mtl_grps, i);
 
     // Delete the texture if it exists
-    if(grp->mtl.tex.texture != NULL) SDL_FreeSurface(grp->mtl.tex.texture);
     glDeleteTextures(1, &grp->mtl.tex.texID);
   }
   
