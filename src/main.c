@@ -24,7 +24,7 @@ typedef struct {
 static shader_t s_id;
 static mesh_t mesh;
 static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
-static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f/2.2f, 1.0f/2.2f, 1.0f/2.2f}, 0.0005f, 0.04f};
+static lightsource_t light = {{0.0f, 10.0f, 10.0f}, {1.0f, 1.0f, 1.0f}, {1.0f/2.2f, 1.0f/2.2f, 1.0f/2.2f}, 0.0005f, 0.04f};
 static camera_t camera = {{0.0f, 0.0f, 10.0f}, {0.0f, 0.0f, 0.0f}};
 
 static char obj_model[256], vertex_shader[256], fragment_shader[256];
@@ -150,7 +150,7 @@ void _update() {
   mat4_transpose(&normalmodelview);
 
   // The point light will track the camera
-  light.position = camera.position;
+  //light.position = camera.position;
 }
 
 bool _init_sdl() {
@@ -265,7 +265,6 @@ void _draw() {
   shader_set_uniform(s_id, "light.gamma", SHADER_UNIFORM_VEC3, &light.gamma); 
   shader_set_uniform(s_id, "light.attenuation", SHADER_UNIFORM_FLOAT, &light.attenuation); 
   shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &light.ambient_coefficient); 
-  shader_set_uniform(s_id, "cam.position", SHADER_UNIFORM_VEC3, &camera.position); 
    
   size_t size = array_size(mesh.mtl_grps);
   for(uint64_t i = 0; i < size; i++) {

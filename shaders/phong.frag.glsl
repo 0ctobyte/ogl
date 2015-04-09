@@ -40,7 +40,7 @@ out vec4 f_Color;
 void main()
 {
   // Calculate vector from this pixel's surface to light source
-  vec3 surf_to_light = light.position - o_Position;
+  vec3 surf_to_light = vec3(modelview*vec4(light.position, 1.0)) - o_Position;
 
   // Determine whether use texture or diffuse material color
   vec4 surface_color = (mtl.use_texture) ? texture(tex, vec2(o_TexCoord)) : vec4(mtl.diffuse, 1.0);
