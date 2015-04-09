@@ -8,7 +8,7 @@ void mat4_identity(mat4_t *mat) {
   *mat = (mat4_t){{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}};
 }
 
-void mat4_frustum(mat4_t *mat, float left, float right, float bottom, float top, float znear, float zfar) {
+void mat4_frustum(mat4_t *mat, GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar) {
   mat4_t A = MAT4_IDENTITY;
 	A.m[0] = (2.0f*znear)/(right-left);
 	A.m[5] = (2.0f*znear)/(top-bottom);
@@ -21,9 +21,9 @@ void mat4_frustum(mat4_t *mat, float left, float right, float bottom, float top,
   mat4_mult(mat, &A);
 }
 
-void mat4_perspective(mat4_t *mat, float fovy, float faspect, float znear, float zfar) {
+void mat4_perspective(mat4_t *mat, GLfloat fovy, GLfloat faspect, GLfloat znear, GLfloat zfar) {
   mat4_t A = MAT4_IDENTITY;
-	float f = 1.0f/((float)tan((fovy*(M_PI/180.0f))/2.0f));
+	GLfloat f = 1.0f/((GLfloat)tan((fovy*(M_PI/180.0f))/2.0f));
 	A.m[0]=f/faspect;
 	A.m[5]=f;
 	A.m[10]=(zfar+znear)/(znear-zfar);
@@ -33,7 +33,7 @@ void mat4_perspective(mat4_t *mat, float fovy, float faspect, float znear, float
   mat4_mult(mat, &A);
 }
 
-void mat4_orthographic(mat4_t *mat, float left, float right, float bottom, float top, float znear, float zfar) {
+void mat4_orthographic(mat4_t *mat, GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat znear, GLfloat zfar) {
   mat4_t A = MAT4_IDENTITY;
 	A.m[0] = 2.0f/(right-left);
 	A.m[5] = 2.0f/(top-bottom);
@@ -44,7 +44,7 @@ void mat4_orthographic(mat4_t *mat, float left, float right, float bottom, float
   mat4_mult(mat, &A);
 }
 
-void mat4_translatef(mat4_t *mat, float x, float y, float z) {
+void mat4_translatef(mat4_t *mat, GLfloat x, GLfloat y, GLfloat z) {
   mat4_t A = MAT4_IDENTITY;
 	A.m[12] = x;
   A.m[13] = y;
@@ -66,15 +66,15 @@ void mat4_untranslate(mat4_t *mat) {
   mat->m[14] = 0.0f;
 }
 
-void mat4_rotatef(mat4_t *mat, float angle, float x, float y, float z) {
+void mat4_rotatef(mat4_t *mat, GLfloat angle, GLfloat x, GLfloat y, GLfloat z) {
   mat4_t A = MAT4_IDENTITY;
   vec3_t v = {x, y, z};
 
   // Calculate angle in radians
-  angle = angle*(float)M_PI/180.0f;
-  float c = (float)cos(angle);
-  float s = (float)sin(angle);
-  float oc = 1-c;
+  angle = angle*(GLfloat)M_PI/180.0f;
+  GLfloat c = (GLfloat)cos(angle);
+  GLfloat s = (GLfloat)sin(angle);
+  GLfloat oc = 1-c;
   v = vec3_normalize(&v);
   A.m[0] = (v.x*v.x)*oc+c;
   A.m[1] = v.y*v.x*oc+v.z*s;
@@ -88,15 +88,15 @@ void mat4_rotatef(mat4_t *mat, float angle, float x, float y, float z) {
   mat4_mult(mat, &A);
 }
 
-void mat4_rotate(mat4_t *mat, float angle, const vec3_t *u) {
+void mat4_rotate(mat4_t *mat, GLfloat angle, const vec3_t *u) {
   mat4_t A = MAT4_IDENTITY;
   vec3_t v = vec3_normalize(u);
   
   // Calculate angle in radians
-  angle = angle*(float)M_PI/180.0f;
-  float c = (float)cos(angle);
-  float s = (float)sin(angle);
-  float oc = 1-c;
+  angle = angle*(GLfloat)M_PI/180.0f;
+  GLfloat c = (GLfloat)cos(angle);
+  GLfloat s = (GLfloat)sin(angle);
+  GLfloat oc = 1-c;
   A.m[0] = (v.x*v.x)*oc+c;
   A.m[1] = v.y*v.x*oc+v.z*s;
   A.m[2] = v.x*v.z*oc-v.y*s;
@@ -119,7 +119,7 @@ void mat4_transpose(mat4_t *mat) {
 
 void mat4_inverse(mat4_t *mat) {
 	mat4_t A;
-	float det = mat4_determinant(mat);
+	GLfloat det = mat4_determinant(mat);
 	if(fabs(det) < 0.000001f) return;
 	for(uint64_t c=0; c<4; c++)
 		for(uint64_t r=0; r<4; r++)
@@ -128,13 +128,13 @@ void mat4_inverse(mat4_t *mat) {
   memcpy(mat, &A, sizeof(mat4_t));
 }
 
-float mat4_cofactor(const mat4_t *mat, uint64_t column, uint64_t row) {
+GLfloat mat4_cofactor(const mat4_t *mat, uint64_t column, uint64_t row) {
 	if(column > 3 || row > 3) return 0.0f;
-	float cofactor = 0.0f;
+	GLfloat cofactor = 0.0f;
 	for(int32_t c = 0; c < 4; c++)
 	{
 		if(c == (int32_t)column) continue;
-		float pfactor=1, nfactor=1;
+		GLfloat pfactor=1, nfactor=1;
 		for(int32_t pcc = c, ncc = c, r = 0; r < 4; r++)
 		{
 			if(r == (int32_t)row) continue;
@@ -151,7 +151,7 @@ float mat4_cofactor(const mat4_t *mat, uint64_t column, uint64_t row) {
 	return (((row+column)%2==0) ? cofactor : -1*cofactor);
 }
 
-float mat4_determinant(const mat4_t *mat) {
+GLfloat mat4_determinant(const mat4_t *mat) {
 	//Basically, we have to take an arbitrary row (or column), in this case we
 	//took the fourth row of the matrix, and multiply each element in that row
 	//by it's signed cofactor, which is found by calculating the determinant of

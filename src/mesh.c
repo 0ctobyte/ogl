@@ -4,7 +4,6 @@
 
 #include <SDL2/SDL_log.h>
 
-#include "gl_core_4_1.h"
 #include "mesh.h"
 #include "vec.h"
 #include "obj.h"
@@ -27,21 +26,21 @@ void _mesh_gen_buffers(mesh_t *mesh) {
 
   // Copy the index data into the index buffer
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ibo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(array_size(mesh->indices)*sizeof(uint32_t)), array_data(mesh->indices), GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)(array_size(mesh->indices)*sizeof(GLuint)), array_data(mesh->indices), GL_STATIC_DRAW);
 
   // Copy the vertex data into the vertex buffer
   glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(array_size(mesh->vattributes)*3*sizeof(float)), array_data(mesh->vattributes), GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(array_size(mesh->vattributes)*3*sizeof(GLfloat)), array_data(mesh->vattributes), GL_STATIC_DRAW);
 
   // Set and enable the vertex attributes. 0 = vertex position, 1 = vertex texture coordinates, 2 = vertex normals
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (GLvoid*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), (GLvoid*)0);
 
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (GLvoid*)(3*sizeof(float)));
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), (GLvoid*)(3*sizeof(GLfloat)));
 
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9*sizeof(float), (GLvoid*)(6*sizeof(float)));
+  glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9*sizeof(GLfloat), (GLvoid*)(6*sizeof(GLfloat)));
 
   // Unbind VAO
   glBindVertexArray(0);
@@ -54,8 +53,7 @@ void _mesh_init_material(material_t *mtl) {
   mtl->shininess = 80.0f;
   mtl->transparency = 1.0f;
   mtl->tex.texID = 0;
-  mtl->tex.texture = NULL;
-  mtl->tex.use_texture = false;
+  mtl->tex.use_texture = GL_FALSE;
 }
 
 void _mesh_create_material_group(mesh_t *mesh) {
@@ -80,7 +78,7 @@ void _mesh_create_material_group(mesh_t *mesh) {
 
 void _mesh_load_texture(mesh_t *mesh, material_t *mtl, const char *tex_filename) {
   // Load the BMP
-  mtl->tex.use_texture = 0;
+  mtl->tex.use_texture = GL_FALSE;
   SDL_Surface *surface = SDL_LoadBMP(tex_filename);
 
   // Make sure the file exists and was loaded properly
@@ -92,7 +90,7 @@ void _mesh_load_texture(mesh_t *mesh, material_t *mtl, const char *tex_filename)
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Size of \'%s\': %u bytes, dimensions: %u x %u pixels\n", tex_filename, surface->w*surface->h*surface->format->BytesPerPixel, surface->w, surface->h);
   
   // Convert the surface to RGBA
-  mtl->tex.texture = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
+  SDL_Surface *texture = SDL_ConvertSurfaceFormat(surface, SDL_PIXELFORMAT_RGBA8888, 0);
   if(surface != NULL) SDL_FreeSurface(surface);
  
   glBindVertexArray(mesh->vao);
@@ -108,15 +106,15 @@ void _mesh_load_texture(mesh_t *mesh, material_t *mtl, const char *tex_filename)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   // Upload the texture pixel data
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)mtl->tex.texture->w, (GLsizei)mtl->tex.texture->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, mtl->tex.texture->pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (GLsizei)texture->w, (GLsizei)texture->h, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, texture->pixels);
 
   // Unbind the texture
   glBindTexture(GL_TEXTURE_2D, 0);
   glBindVertexArray(0);
 
   // Free the surface
-  mtl->tex.use_texture = 1;
-  SDL_FreeSurface(mtl->tex.texture);
+  mtl->tex.use_texture = GL_TRUE;
+  SDL_FreeSurface(texture);
 }
 
 bool _mesh_load_material(mesh_t *mesh, const char *mtl_filename, array_t *mtl_list) {
@@ -223,13 +221,13 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   }
 
   // Initialize the arrays.
-  mesh->vattributes = array_create(256, 3*sizeof(float));
-  mesh->indices = array_create(256, sizeof(uint32_t));
+  mesh->vattributes = array_create(256, 3*sizeof(GLfloat));
+  mesh->indices = array_create(256, sizeof(GLuint));
   mesh->mtl_grps = array_create(2, sizeof(material_group_t));
   
   // Grab the vertex attribute data and place them in separate arrays
-  array_t *uv = array_create(256, 3*sizeof(float));
-  array_t *normals = array_create(256, 3*sizeof(float));
+  array_t *uv = array_create(256, 3*sizeof(GLfloat));
+  array_t *normals = array_create(256, 3*sizeof(GLfloat));
   array_t *mtllib = array_create(16, sizeof(char));
 
   for(; p.token.type != OBJ_ENDOFFILE; obj_lexer_get_token(&p)) {
@@ -248,7 +246,7 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
 
       // Now append zero vectors for the normal and texture coordinate attributes
       // The z value is initially set to -10.0f to indicate that the attribute is currently empty
-      float u[3] = {0.0f, 0.0f, -10.0f};
+      GLfloat u[3] = {0.0f, 0.0f, -10.0f};
       array_append(mesh->vattributes, &u);
       array_append(mesh->vattributes, &u);
       break;
@@ -268,9 +266,9 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
   array_t *mtl_list = array_create(2, sizeof(material_def_t));
   if(array_size(mtllib) > 0) _mesh_load_material(mesh, array_data(mtllib), mtl_list);
 
-  array_t *i_positions = array_create(4, sizeof(uint32_t));
-  array_t *i_texcoords = array_create(4, sizeof(uint32_t));
-  array_t *i_normals = array_create(4, sizeof(uint32_t));
+  array_t *i_positions = array_create(4, sizeof(GLuint));
+  array_t *i_texcoords = array_create(4, sizeof(GLuint));
+  array_t *i_normals = array_create(4, sizeof(GLuint));
 
   // Parse the indices as they are read in and place the vertex attributes in the correct index in the vertex attribute array
   for(p.c_index = 0, p.token.type = OBJ_UNKNOWN; p.token.type != OBJ_ENDOFFILE; obj_lexer_get_token(&p)) {
@@ -297,21 +295,21 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
           
           // Indices start from 1 in the Wavefront OBJ format
           // Get all the indices for the each vertex attributes
-          uint32_t index = *((uint32_t*)array_at(i_positions, i))-1;
-          uint32_t v_index = (array_size(i_texcoords) > 0) ? *((uint32_t*)array_at(i_texcoords, i)) : 0;
-          uint32_t n_index = (array_size(i_normals) > 0) ? *((uint32_t*)array_at(i_normals, i)) : 0;
+          GLuint index = *((GLuint*)array_at(i_positions, i))-1;
+          GLuint v_index = (array_size(i_texcoords) > 0) ? *((GLuint*)array_at(i_texcoords, i)) : 0;
+          GLuint n_index = (array_size(i_normals) > 0) ? *((GLuint*)array_at(i_normals, i)) : 0;
          
-          float v[3] = {0.0f, 0.0f, 0.0f};
-          float n[3] = {0.0f, 0.0f, 0.0f};
+          GLfloat v[3] = {0.0f, 0.0f, 0.0f};
+          GLfloat n[3] = {0.0f, 0.0f, 0.0f};
           bool duplicate = false;
 
           // Make sure the texture coordinate was specified
           if(v_index != 0) {
             v_index--;
-            memcpy(v, array_at(uv, v_index), 3*sizeof(float));
+            memcpy(v, array_at(uv, v_index), 3*sizeof(GLfloat));
 
             // Check if the vertex needs to be duplicated, if the texture coordinates are different for the same vertex
-            float *u = array_at(mesh->vattributes, index*3+1);
+            GLfloat *u = array_at(mesh->vattributes, index*3+1);
 
             if((u[2] != -10.0f)&& (u[0] != v[0] || u[1] != v[1])) duplicate = true;
           } 
@@ -319,20 +317,20 @@ bool mesh_load(mesh_t *mesh, const char *objfile) {
           // Make sure a normal was specified
           if(n_index != 0) {
             n_index--;
-            memcpy(n, array_at(normals, n_index), 3*sizeof(float));
+            memcpy(n, array_at(normals, n_index), 3*sizeof(GLfloat));
 
             // Check if the vertex needs to be duplicated, if the normals are different for the same vertex
-            float *u = array_at(mesh->vattributes, index*3+2);
+            GLfloat *u = array_at(mesh->vattributes, index*3+2);
 
             if((u[2] != -10.0f) && (u[0] != n[0] || u[1] != n[1] || u[2] != n[2])) duplicate = true;
           }
 
           // Duplicate the vertex attribute if needed
           if(duplicate) {
-            float l[3] = {0.0f, 0.0f, 0.0f};
-            memcpy(l, array_at(mesh->vattributes, index*3), 3*sizeof(float));
+            GLfloat l[3] = {0.0f, 0.0f, 0.0f};
+            memcpy(l, array_at(mesh->vattributes, index*3), 3*sizeof(GLfloat));
             array_append(mesh->vattributes, l);
-            index = ((uint32_t)array_size(mesh->vattributes)-1)/3;
+            index = ((GLuint)array_size(mesh->vattributes)-1)/3;
             array_append(mesh->vattributes, v);
             array_append(mesh->vattributes, n);
           } else {

@@ -1,32 +1,29 @@
 #ifndef __MESH_H__
 #define __MESH_H__
 
-#include <stdint.h>
 #include <stdbool.h>
 
 #include <SDL2/SDL_Surface.h>
 
+#include "gl_core_4_1.h"
 #include "array.h"
 
 typedef struct {
   // Handle to the texture unit
-  uint32_t texID;
-
-  // The actual texture data
-  SDL_Surface *texture;
+  GLuint texID;
 
   // True if texture is bound
-  int32_t use_texture;
+  GLuint use_texture;
 } texture_t;
 
 typedef struct {
-  float diffuse[3];
-  float ambient[3];
-  float specular[3];
+  GLfloat diffuse[3];
+  GLfloat ambient[3];
+  GLfloat specular[3];
 
   // This is essentially the specular exponent
-  float shininess;
-  float transparency;
+  GLfloat shininess;
+  GLfloat transparency;
 
   // The texture data if needed
   texture_t tex;
@@ -38,22 +35,22 @@ typedef struct {
   material_t mtl;
 
   // The offset into the index list and the # of indices used by the material group
-  uint64_t offset;
-  size_t count;
+  GLuint offset;
+  GLuint count;
 } material_group_t;
 
 typedef struct {
   // Handle to the OpenGL vertex array object
-  uint32_t vao;
+  GLuint vao;
 
   // Handle to the OpenGL vertex buffer object (vertex attribute data)
-  uint32_t vbo;
+  GLuint vbo;
   
   // List of vertex attributes (position, texture, normals)
   array_t *vattributes;
 
   // Handle to the OpenGL index buffer object
-  uint32_t ibo;
+  GLuint ibo;
 
   // List of indices into the vertex attribute array
   array_t *indices;

@@ -12,18 +12,23 @@ typedef struct {
   vec3_t position;
   vec3_t intensities;
   vec3_t gamma;
-  float attenuation;
-  float ambient_coefficient;
+  GLfloat attenuation;
+  GLfloat ambient_coefficient;
 } lightsource_t;
 
-static uint32_t s_id;
+typedef struct {
+  vec3_t position;
+  vec3_t rotation;
+} camera_t;
+
+static shader_t s_id;
 static mesh_t mesh;
-static vec3_t camera, model_rot, model_pos = {0.0f, 0.0f, -10.0f};
 static mat4_t projection = MAT4_IDENTITY, modelviewprojection = MAT4_IDENTITY, modelview = MAT4_IDENTITY, normalmodelview = MAT4_IDENTITY; 
 static lightsource_t light = {{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f/2.2f, 1.0f/2.2f, 1.0f/2.2f}, 0.0005f, 0.04f};
+static camera_t camera = {{0.0f, 0.0f, 10.0f}, {0.0f, 0.0f, 0.0f}};
 
 static char obj_model[256], vertex_shader[256], fragment_shader[256];
-static int32_t w, h;
+static GLint w, h;
 static SDL_Window *window;
 
 void _quit() {
@@ -76,41 +81,41 @@ void _key_down(SDL_Event *event) {
   switch(event->key.keysym.sym) {
   case SDLK_UP:
     if(event->key.keysym.mod == KMOD_LSHIFT) {
-      camera.z -= step_size;
+      camera.position.z -= step_size;
     } else {
-      camera.y += step_size;
+      camera.position.y += step_size;
     }
     break;
   case SDLK_DOWN:
     if(event->key.keysym.mod == KMOD_LSHIFT) {
-      camera.z += step_size;
+      camera.position.z += step_size;
     } else {
-      camera.y -= step_size;
+      camera.position.y -= step_size;
     }
     break;
   case SDLK_RIGHT:
-    camera.x += step_size;
+    camera.position.x += step_size;
     break;
   case SDLK_LEFT:
-    camera.x -= step_size;
+    camera.position.x -= step_size;
     break;
   case SDLK_w:
-    model_rot.x += rot_mult*step_size;
+    camera.rotation.x += rot_mult*step_size;
     break;
   case SDLK_s:
-    model_rot.x -= rot_mult*step_size;
+    camera.rotation.x -= rot_mult*step_size;
     break;
   case SDLK_d:
-    model_rot.y += rot_mult*step_size;
+    camera.rotation.y += rot_mult*step_size;
     break;
   case SDLK_a:
-    model_rot.y -= rot_mult*step_size;
+    camera.rotation.y -= rot_mult*step_size;
     break;
   case SDLK_e:
-    model_rot.z += rot_mult*step_size;
+    camera.rotation.z += rot_mult*step_size;
     break;
   case SDLK_q:
-    model_rot.z -= rot_mult*step_size;
+    camera.rotation.z -= rot_mult*step_size;
     break;
   case SDLK_f:
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -123,19 +128,15 @@ void _key_down(SDL_Event *event) {
   }
 }
 
-
 void _update() {
   // Update the modelview matrix, improves performance since shaders don't have to compute this for every vertex
-  // Translate the camera
+  // Apply the rotation and translation to the camera
   mat4_identity(&modelview);
-  mat4_translate(&modelview, &camera);
+  mat4_rotatef(&modelview, camera.rotation.x, 1.0f, 0.0f, 0.0f);
+  mat4_rotatef(&modelview, camera.rotation.y, 0.0f, 1.0f, 0.0f);
+  mat4_rotatef(&modelview, camera.rotation.z, 0.0f, 0.0f, 1.0f);
+  mat4_translate(&modelview, &camera.position);
   mat4_inverse(&modelview);
-
-  // Apply the rotation and translation to the model
-  mat4_translate(&modelview, &model_pos);
-  mat4_rotatef(&modelview, model_rot.x, 1.0f, 0.0f, 0.0f);
-  mat4_rotatef(&modelview, model_rot.y, 0.0f, 1.0f, 0.0f);
-  mat4_rotatef(&modelview, model_rot.z, 0.0f, 0.0f, 1.0f);
 
   // update the modelviewprojection matrix
   modelviewprojection = projection;
@@ -149,7 +150,7 @@ void _update() {
   mat4_transpose(&normalmodelview);
 
   // The point light will track the camera
-  light.position = camera;
+  light.position = camera.position;
 }
 
 bool _init_sdl() {
@@ -264,7 +265,7 @@ void _draw() {
   shader_set_uniform(s_id, "light.gamma", SHADER_UNIFORM_VEC3, &light.gamma); 
   shader_set_uniform(s_id, "light.attenuation", SHADER_UNIFORM_FLOAT, &light.attenuation); 
   shader_set_uniform(s_id, "light.ambient_coefficient", SHADER_UNIFORM_FLOAT, &light.ambient_coefficient); 
-  //shader_set_uniform(s_id, "cam.position", SHADER_UNIFORM_VEC3, &camera); 
+  shader_set_uniform(s_id, "cam.position", SHADER_UNIFORM_VEC3, &camera.position); 
    
   size_t size = array_size(mesh.mtl_grps);
   for(uint64_t i = 0; i < size; i++) {
