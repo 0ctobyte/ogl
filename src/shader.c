@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <SDL2/SDL.h>
-#include <OpenGL/gl3.h>
+#include <SDL2/SDL_log.h>
 
+#include "gl_core_4_1.h"
 #include "shader.h"
 
 uint32_t _shader_compile(const char *shadercode, uint32_t shader_type) {

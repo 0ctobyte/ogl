@@ -2,8 +2,8 @@
 #include <stdbool.h>
 
 #include <SDL2/SDL.h>
-#include <OpenGL/gl3.h>
 
+#include "gl_core_4_1.h"
 #include "mat.h"
 #include "shader.h"
 #include "mesh.h"
@@ -192,6 +192,7 @@ bool _init_sdl() {
     return false;
   }
 
+  
   // Enable VSYNC
   if(SDL_GL_SetSwapInterval(1) != 0) {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VSYNC not enabled!: %s\n", SDL_GetError());
@@ -206,23 +207,16 @@ bool _init_sdl() {
   // Get size of SDL drawable portion of the window
   SDL_GL_GetDrawableSize(window, &w, &h);
 
-  // Get the OpenGL context settings
-  int32_t minor_version, major_version, profile_mask;
-  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major_version);
-  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor_version);
-  SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profile_mask);
-
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SDL version: %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SDL OpenGL context: %d.%d %s\n", major_version, minor_version, (profile_mask == SDL_GL_CONTEXT_PROFILE_CORE) ? "core profile" : ((profile_mask == SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) ? "compatibility profile" : "ES profile"));
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL vendor: %s\n", glGetString(GL_VENDOR));
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL renderer: %s\n", glGetString(GL_RENDERER));
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL version: %s\n", glGetString(GL_VERSION));
-  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "GLSL version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
   return true;
 }
 
-void _init_gl() {
+bool _init_gl() {
+  // Initialize OpenGl function pointers using glLoadGen
+  if(ogl_LoadFunctions() != ogl_LOAD_SUCCEEDED) {
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Unable to load OpenGL functions\n");
+    return false;
+  }
+
   // Set the viewport to the current window dimensions
   glViewport(0, 0, w, h);
 
@@ -251,6 +245,8 @@ void _init_gl() {
 
   // Enable multisampling (this may have been already enabled by SDL)
   glEnable(GL_MULTISAMPLE);
+
+  return true;
 }
 
 void _draw() {
@@ -301,7 +297,21 @@ int main(int argc, char **argv) {
   if(!_init_sdl()) exit(EXIT_FAILURE);
   
   // OpenGL specific initializations
-  _init_gl();
+  if(!_init_gl()) exit(EXIT_FAILURE);
+
+  // Get the OpenGL context settings
+  int32_t minor_version, major_version, profile_mask;
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major_version);
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor_version);
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profile_mask);
+
+  // Print out some info
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SDL version: %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "SDL OpenGL context: %d.%d %s\n", major_version, minor_version, (profile_mask == SDL_GL_CONTEXT_PROFILE_CORE) ? "core profile" : ((profile_mask == SDL_GL_CONTEXT_PROFILE_COMPATIBILITY) ? "compatibility profile" : "ES profile"));
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL vendor: %s\n", glGetString(GL_VENDOR));
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL renderer: %s\n", glGetString(GL_RENDERER));
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "OpenGL version: %s\n", glGetString(GL_VERSION));
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "GLSL version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
   // Get the cmd-line args
   sprintf(obj_model, "resources/teapot.obj");

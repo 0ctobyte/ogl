@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <vec.h>
+#include "vec.h"
 
 // VEC3
 

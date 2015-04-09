@@ -2,7 +2,6 @@
 #define __MAT_H__
 
 #include <stdint.h>
-#include <OpenGL/gl3.h>
 
 #include "vec.h"
 
@@ -11,7 +10,7 @@
 #define MAT4_IDENTITY {{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}}
 
 typedef struct {
-  GLfloat m[16];
+  float m[16];
 } mat4_t;
 
 void mat4_identity(mat4_t *mat);

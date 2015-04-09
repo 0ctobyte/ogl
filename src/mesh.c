@@ -2,10 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_log.h>
-#include <OpenGL/gl3.h>
 
+#include "gl_core_4_1.h"
 #include "mesh.h"
 #include "vec.h"
 #include "obj.h"

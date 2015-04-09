@@ -2,14 +2,13 @@
 #define __VEC_H__
 
 #include <stdbool.h>
-#include <OpenGL/gl3.h>
 
 typedef struct {
-  GLfloat x, y, z;
+  float x, y, z;
 } vec3_t;
 
 typedef struct {
-  GLfloat x, y, z, w;
+  float x, y, z, w;
 } vec4_t;
 
 // VEC3

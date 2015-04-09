@@ -92,8 +92,7 @@ const void* array_data(array_t *a) {
 }
 
 size_t array_size(array_t *a) {
-  assert(a != NULL);
-  return a->size;
+  return (a == NULL) ? 0 : a->size;
 }
 
 void array_copy(array_t *dst, array_t *src) {

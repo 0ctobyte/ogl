@@ -2,7 +2,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <mat.h>
+#include "mat.h"
 
 void mat4_identity(mat4_t *mat) {
   *mat = (mat4_t){{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f}};
