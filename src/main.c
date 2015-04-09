@@ -81,23 +81,23 @@ void _key_down(SDL_Event *event) {
   switch(event->key.keysym.sym) {
   case SDLK_UP:
     if(event->key.keysym.mod == KMOD_LSHIFT) {
-      camera.position.z -= step_size;
+      light.position.z -= step_size;
     } else {
-      camera.position.y += step_size;
+      light.position.y += step_size;
     }
     break;
   case SDLK_DOWN:
     if(event->key.keysym.mod == KMOD_LSHIFT) {
-      camera.position.z += step_size;
+      light.position.z += step_size;
     } else {
-      camera.position.y -= step_size;
+      light.position.y -= step_size;
     }
     break;
   case SDLK_RIGHT:
-    camera.position.x += step_size;
+    light.position.x += step_size;
     break;
   case SDLK_LEFT:
-    camera.position.x -= step_size;
+    light.position.x -= step_size;
     break;
   case SDLK_w:
     camera.rotation.x += rot_mult*step_size;
