@@ -128,6 +128,37 @@ void _key_down(SDL_Event *event) {
   }
 }
 
+void _mouse_motion(SDL_Event *event) {
+  vec3_t viewport = {event->motion.x, event->motion.y, 0};
+
+  char s[256];
+
+  // Reverse the direction of y since y goes up in OpengGL and down in viewport coordinates
+  vec3_t ndc = {2*viewport.x/w-1, 1-2*viewport.y/h, 1.0f};
+
+  // Homogenous clip coordinates
+  vec4_t clip = {ndc.x, ndc.y, -ndc.z, 1.0f};
+
+  // Eye space: inverse projection matrix
+  mat4_t inv_projection = projection;
+  mat4_inverse(&inv_projection);
+  vec4_t eye = mat4_multv(&inv_projection, &clip);
+
+  // Eye space to world space and then to model space in one go: inverse modelview matrix
+  mat4_t inv_modelview = modelview;
+  mat4_inverse(&inv_modelview);
+  vec4_t model = mat4_multv(&inv_modelview, &eye);
+  
+  // Perform reverse perspective division? Not sure if I did this right
+  model.x = model.x*model.z;
+  model.y = model.y*model.z;
+  
+  // Update the lights position
+  light.position = (vec3_t){model.x, model.y, light.position.z};
+  vec3_str(&light.position, s);
+  SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "light.position: %s\n", s);
+}
+
 void _update() {
   // Update the modelview matrix, improves performance since shaders don't have to compute this for every vertex
   // Apply the rotation and translation to the camera
@@ -360,6 +391,10 @@ int main(int argc, char **argv) {
       break;
     case SDL_KEYDOWN:
       _key_down(&event);
+      _update();
+      break;
+    case SDL_MOUSEMOTION:
+      _mouse_motion(&event);
       _update();
       break;
     }
